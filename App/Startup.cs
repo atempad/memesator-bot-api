@@ -1,6 +1,7 @@
+using App.Middlewares;
+using App.Services;
 using App.Settings;
 using Microsoft.Azure.Cosmos;
-using Services;
 using Telegram.Bot;
 
 namespace App;
@@ -22,14 +23,24 @@ public class Startup(IConfiguration configuration)
                 return new TelegramBotClient(options, httpClient);
             });
 
+        services
+            .AddControllers()
+            .AddNewtonsoftJson();
+        
+        services.AddHostedService<TelegramBotWebhookConfigurator>();
         services.AddScoped<UpdateHandler>();
-        services.AddScoped<ReceiverService>();
-        services.AddHostedService<PollingService>();
         services.AddSingleton(new CosmosClient(dbSettings.AccountEndpoint, dbSettings.AccountKey));
     }
     
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
+        app.UseMiddleware<RequestLoggingMiddleware>();
+        
+        app.UseRouting();
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllers();
+        });
     }
     
     private T ConfigureOptions<T>(IServiceCollection services) where T : class

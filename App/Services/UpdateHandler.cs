@@ -1,31 +1,24 @@
 using System.Net;
-using App.Settings;
+using App.Models;
 using Microsoft.Azure.Cosmos;
-using Microsoft.Extensions.Options;
-using Models;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Services;
+namespace App.Services;
 
-public class UpdateHandler : IUpdateHandler
+public class UpdateHandler(
+    ITelegramBotClient _botClient, 
+    CosmosClient _cosmosClient, 
+    ILogger<UpdateHandler> _logger)
 {
-    private readonly ITelegramBotClient _botClient;
-    private readonly ILogger<UpdateHandler> _logger;
-    private Container _subscribersContainer;
-    
-    public UpdateHandler(ITelegramBotClient botClient, CosmosClient cosmosClient, ILogger<UpdateHandler> logger)
-    {
-         _botClient = botClient;
-        _subscribersContainer = cosmosClient.GetContainer("MemesatorDB", "Subscribers");
-        _logger = logger;
-    }
-    
-    public async Task HandleUpdateAsync(ITelegramBotClient _, Update update, CancellationToken cancellationToken)
+    private readonly Container _subscribersContainer = _cosmosClient.GetContainer(
+        Constants.DB.Id, 
+        Constants.DB.Containers.Subscribers);
+
+    public async Task HandleUpdateAsync(Update update, CancellationToken cancellationToken)
     {
         var handler = update switch
         {
@@ -33,13 +26,11 @@ public class UpdateHandler : IUpdateHandler
             { EditedMessage: { } message }                 => BotOnMessageReceived(message, cancellationToken),
             _                                              => UnknownUpdateHandlerAsync(update, cancellationToken)
         };
-
         await handler;
     }
 
     private async Task BotOnMessageReceived(Message message, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Receive message type: {MessageType}", message.Type);
         if (message.Text is not { } messageText)
             return;
 
