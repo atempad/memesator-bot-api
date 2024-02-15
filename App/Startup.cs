@@ -1,8 +1,10 @@
 using App.Middlewares;
-using App.Services;
+using App.Repositories;
+using App.Services.Commands;
+using App.Services.Operations;
+using App.Services.Telegram;
 using App.Settings;
 using Microsoft.Azure.Cosmos;
-using Telegram.Bot;
 
 namespace App;
 
@@ -12,24 +14,24 @@ public class Startup(IConfiguration configuration)
 
     public void ConfigureServices(IServiceCollection services)
     {
-        TelegramBotSettings telegramBotSettings = ConfigureOptions<TelegramBotSettings>(services);
-        DbSettings dbSettings = ConfigureOptions<DbSettings>(services);
-
+        ConfigureOptions<TelegramBotSettings>(services);
         services
-            .AddHttpClient(nameof(TelegramBotClient))
-            .AddTypedClient<ITelegramBotClient>((httpClient, _) => 
-            {
-                TelegramBotClientOptions options = new(telegramBotSettings.ApiToken);
-                return new TelegramBotClient(options, httpClient);
-            });
-
+            .AddHttpClient("Bot")
+            .AddTypedClient<ITelegramBotApi, TelegramBotApi>();
+        
+        DbSettings dbSettings = ConfigureOptions<DbSettings>(services);
+        services.AddSingleton(new CosmosClient(dbSettings.AccountEndpoint, dbSettings.AccountKey));
+        services.AddSingleton<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddSingleton<IUserRepository, UserRepository>();
+        
+        services.AddScoped<ITelegramBotOperationResolver, TelegramBotOperationResolver>();
+        services.AddScoped<IUrlProcessCommandResolver, UrlProcessingCommandResolver>();
+        
+        services.AddHostedService<TelegramBotWebhookConfigurator>();
+        
         services
             .AddControllers()
             .AddNewtonsoftJson();
-        
-        services.AddHostedService<TelegramBotWebhookConfigurator>();
-        services.AddScoped<UpdateHandler>();
-        services.AddSingleton(new CosmosClient(dbSettings.AccountEndpoint, dbSettings.AccountKey));
     }
     
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
