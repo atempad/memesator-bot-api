@@ -1,19 +1,20 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace App.Models.DB;
+namespace App.Models.API.Telegram;
 
 [JsonObject(MemberSerialization.OptIn, NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
-public class BotUser : IEntity
+public class TelegramMessage
 {
     [JsonProperty(Required = Required.Always)]
-    public required string Id { get; set; }
+    public int MessageId { get; set; }
     
     [JsonProperty(Required = Required.Always)]
-    public required string ChatId { get; set; }
+    public TelegramChat Chat { get; set; } = default!;
     
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-    public string? Username { get; set; }
-
-    public bool IsValid => !string.IsNullOrWhiteSpace(Id) && !string.IsNullOrWhiteSpace(ChatId);
+    public TelegramUser? From { get; set; }
+    
+    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    public string? Text { get; set; }
 }

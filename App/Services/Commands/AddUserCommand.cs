@@ -4,7 +4,7 @@ using App.Repositories;
 namespace App.Services.Commands;
 
 public class AddUserCommand(
-    BotUser _userToAdd, 
+    ServiceUser _userToAdd, 
     IUserRepository _userRepository) : IAsyncCommand<string>
 {
     public async Task<string> InvokeAsync(CancellationToken cancellationToken = default)

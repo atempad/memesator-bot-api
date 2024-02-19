@@ -9,11 +9,11 @@ public class UserRepository(CosmosClient _cosmosClient) : IUserRepository
     private readonly Container _container = _cosmosClient.GetContainer(
         Constants.DB.Id, Constants.DB.Containers.Users);
 
-    public async Task<bool> AddEntityAsync(BotUser botUser, CancellationToken cancellationToken = default)
+    public async Task<bool> AddEntityAsync(ServiceUser serviceUser, CancellationToken cancellationToken = default)
     {
         try
         {
-            await _container.CreateItemAsync(botUser, new PartitionKey(botUser.Id), 
+            await _container.CreateItemAsync(serviceUser, new PartitionKey(serviceUser.Id), 
                 cancellationToken: cancellationToken);
             return await Task.FromResult(true);
         }
@@ -27,7 +27,7 @@ public class UserRepository(CosmosClient _cosmosClient) : IUserRepository
     {
         try
         {
-            await _container.DeleteItemAsync<BotUser>(id, new PartitionKey(id), 
+            await _container.DeleteItemAsync<ServiceUser>(id, new PartitionKey(id), 
                 cancellationToken: cancellationToken);
             return await Task.FromResult(true);
         }
@@ -37,10 +37,10 @@ public class UserRepository(CosmosClient _cosmosClient) : IUserRepository
         }
     }
 
-    public async Task<IEnumerable<BotUser>> GetAllEntitiesAsync(string? queryText = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ServiceUser>> GetAllEntitiesAsync(string? queryText = null, CancellationToken cancellationToken = default)
     {
-        var results = new List<BotUser>();
-        var query = _container.GetItemQueryIterator<BotUser>(queryText);
+        var results = new List<ServiceUser>();
+        var query = _container.GetItemQueryIterator<ServiceUser>(queryText);
         while (query.HasMoreResults)
         {
             var response = await query.ReadNextAsync(cancellationToken);
@@ -49,11 +49,11 @@ public class UserRepository(CosmosClient _cosmosClient) : IUserRepository
         return results;
     }
 
-    public async Task<BotUser?> GetEntityAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<ServiceUser?> GetEntityAsync(string id, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _container.ReadItemAsync<BotUser>(id, new PartitionKey(id), 
+            var response = await _container.ReadItemAsync<ServiceUser>(id, new PartitionKey(id), 
                 cancellationToken: cancellationToken);
             return response.Resource;
         }

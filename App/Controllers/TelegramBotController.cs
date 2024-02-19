@@ -1,6 +1,6 @@
 using App.Attributes;
 using App.Models.API;
-using App.Models.DB;
+using App.Models.API.Telegram;
 using App.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,40 +18,21 @@ public class TelegramBotController(
         [FromBody] TelegramUpdate update,
         CancellationToken cancellationToken)
     {
-        if (update.Message == null 
-            || string.IsNullOrWhiteSpace(update.Message.Text)
-            || update.Message.From == null
-            || string.IsNullOrWhiteSpace(update.Message.From.Username))
+        if (update.Message != null
+            && !string.IsNullOrWhiteSpace(update.Message.Text)
+            && update.Message.From != null
+            && !string.IsNullOrWhiteSpace(update.Message.From.Username))
         {
-            return BadRequest("Invalid command");
+            var invoker = new InvokingContext(update.Message.From.Username, update.Message.Chat.Id.ToString());
+            try
+            {
+                await botCommandRouter.RouteCommandAsync(invoker, update.Message.Text, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex.Message);
+            }
         }
-        TelegramUser sender = update.Message.From;
-        TelegramChat chat = update.Message.Chat;
-        var invoker = new BotUser
-        {
-            Id = sender.Username,
-            Username = sender.Username,
-            ChatId = chat.Id.ToString()
-        };
-        try
-        {
-            await botCommandRouter.RouteCommandAsync(invoker, update.Message.Text, cancellationToken);
-        }
-        catch (ArgumentException ex)
-        {
-            logger.LogError(ex.Message);
-            return BadRequest(ex.Message);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            logger.LogError(ex.Message);
-            return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex.Message);
-            return Problem(ex.Message);
-        }
-        return Ok();
+        return Ok(); // return ok in any case to stop retry spamming
     }
 }

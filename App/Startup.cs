@@ -5,6 +5,7 @@ using App.Middlewares;
 using App.Repositories;
 using App.Services;
 using App.Services.Commands;
+using App.Services.Permissions;
 using App.Services.Telegram;
 using App.Settings;
 using Microsoft.Azure.Cosmos;
@@ -26,7 +27,8 @@ public class Startup(IConfiguration configuration)
         services.AddScoped<CosmosClient>(_ => new CosmosClient(dbSettings.AccountEndpoint, dbSettings.AccountKey));
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
-        
+
+        services.AddScoped<IPermissionManager, PermissionManager>();
         services.AddScoped<IUrlProcessCommandResolver, UrlProcessingCommandResolver>();
         
         services.AddSingleton<IBotCommandRouter, BotCommandRouter>();

@@ -1,20 +1,23 @@
+using App.Services.Permissions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace App.Models.API;
+namespace App.Models.DB;
 
 [JsonObject(MemberSerialization.OptIn, NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
-public class TelegramMessage
+public class ServiceUser : IEntity
 {
     [JsonProperty(Required = Required.Always)]
-    public int MessageId { get; set; }
+    public required string Id { get; set; }
     
     [JsonProperty(Required = Required.Always)]
-    public TelegramChat Chat { get; set; } = default!;
+    public required string ChatId { get; set; }
     
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-    public TelegramUser? From { get; set; }
+    public Role? Role { get; set; }
     
     [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-    public string? Text { get; set; }
+    public string? Username { get; set; }
+
+    public bool IsValid => !string.IsNullOrWhiteSpace(Id) && !string.IsNullOrWhiteSpace(ChatId);
 }

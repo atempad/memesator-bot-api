@@ -1,8 +1,10 @@
 using App.Attributes;
+using App.Models.API;
 using App.Models.DB;
 using App.Repositories;
 using App.Services;
 using App.Services.Commands;
+using App.Services.Permissions;
 
 namespace App.Controllers.BotCommandControllers;
 
@@ -14,14 +16,15 @@ public class SubscribeCommandController(
     ISubscriptionRepository subscriptionRepository) : IBotCommandController
 {
     [BotCommandRoute("user")]
-    public async Task SubscribeUserAsync(BotUser invoker, string subscriberId, string broadcasterId, 
+    [RequiredPermission(Permission.AddSubscriptions)]
+    public async Task SubscribeUserAsync(InvokingContext invoker, string subscriberId, string broadcasterId, 
         CancellationToken cancellationToken = default)
     {
         var subscriberUser = await userRepository.GetEntityAsync(subscriberId, cancellationToken);
         if (subscriberUser == null)
         {
             await new SendTextMessageToChatCommand(botClient, invoker.ChatId, 
-                    invoker.Id == subscriberId 
+                    invoker.UserId == subscriberId 
                         ? "Please call /start before using other commands"
                         : $"The user {subscriberId} you are trying to subscribe doesn't exist")
                 .InvokeAsync(cancellationToken);
@@ -44,37 +47,40 @@ public class SubscribeCommandController(
         if (!await subscriptionRepository.AddEntityAsync(subscription, cancellationToken))
         {
             await new SendTextMessageToChatCommand(botClient, invoker.ChatId,
-                invoker.Id == subscriberId 
+                invoker.UserId == subscriberId 
                     ? $"You are already subscribed to the user {broadcasterUser.Id}"
                     : $"The user {subscriberUser.Id} is already subscribed to the user {broadcasterUser.Id}")
                 .InvokeAsync(cancellationToken);
             return;
         }
         await new SendTextMessageToChatCommand(botClient, invoker.ChatId, 
-                invoker.Id == subscriberId 
+                invoker.UserId == subscriberId 
                     ? $"You have been successfully subscribed to the user {broadcasterUser.Id}"
                     : $"The user {subscriberUser.Id} has been successfully subscribed to the user {broadcasterUser.Id}")
             .InvokeAsync(cancellationToken);
     }
     
     [BotCommandRoute]
-    public async Task SubscribeMeAsync(BotUser invoker, string broadcasterId, 
+    [RequiredPermission(Permission.Subscribe)]
+    public async Task SubscribeMeAsync(InvokingContext invoker, string broadcasterId, 
         CancellationToken cancellationToken = default)
     {
-        await SubscribeUserAsync(invoker, invoker.Id, broadcasterId, cancellationToken);
+        await SubscribeUserAsync(invoker, invoker.UserId, broadcasterId, cancellationToken);
     }
     
     [BotCommandRoute("chat")]
-    public async Task SubscribeChatAsync(BotUser invoker, string subscriberId, string broadcasterId,  
+    [RequiredPermission(Permission.AddSubscriptions)]
+    public async Task SubscribeChatAsync(InvokingContext invoker, string subscriberId, string broadcasterId,  
         CancellationToken cancellationToken = default)
     {
         var subscriberChat = await userRepository.GetEntityAsync(subscriberId, cancellationToken);
         if (subscriberChat == null)
         {
-            subscriberChat = new BotUser
+            subscriberChat = new ServiceUser
             {
                 Id = subscriberId,
                 ChatId = "-100" + subscriberId,
+                Role = Role.User,
             };
             await new AddUserCommand(subscriberChat, userRepository)
                 .InvokeAsync(cancellationToken);

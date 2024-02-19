@@ -1,18 +1,21 @@
 using System.Reflection;
-using System.Text.RegularExpressions;
 using App.Attributes;
 using App.Controllers.BotCommandControllers;
+using App.Models.API;
 using App.Models.DB;
+using App.Repositories;
+using App.Services.Permissions;
 
 namespace App.Services;
 
 public class BotCommandRouter : IBotCommandRouter
 {
-    public class InvokeContext(Type controllerType, MethodInfo method)
+    public class InvokeContext(Type controllerType, MethodInfo method, Permission requiredPermissions)
     {
         public readonly Type ControllerType = controllerType;
         public readonly MethodInfo Method = method;
         public readonly ParameterInfo[] MethodParameters = method.GetParameters();
+        public readonly Permission RequiredPermissions = requiredPermissions;
     }
 
     private readonly IServiceProvider serviceProvider;
@@ -39,10 +42,19 @@ public class BotCommandRouter : IBotCommandRouter
             
             foreach (var method in methods)
             {
-                var methodRoute = method.GetCustomAttribute<BotCommandRouteAttribute>()?.Route?.ToLower() ?? "";
+                var methodRequiredPermissions = method
+                    .GetCustomAttributes<RequiredPermissionAttribute>()
+                    .Select(a => a.RequiredPermission)
+                    .Aggregate(Permission.None, (result, permission) => result | permission);
+                
+                var methodRoute = method
+                    .GetCustomAttribute<BotCommandRouteAttribute>()?.Route?
+                    .ToLower() ?? "";
+                
                 var fullRoute = string.IsNullOrEmpty(classRoute) ? methodRoute : $"{classRoute} {methodRoute}";
                 fullRoute = fullRoute.Trim();
-                commandHandlers[fullRoute] = new InvokeContext(controllerType, method);
+                
+                commandHandlers[fullRoute] = new InvokeContext(controllerType, method, methodRequiredPermissions);
                 commandKeys.Add(fullRoute);
             }
         }
@@ -55,22 +67,39 @@ public class BotCommandRouter : IBotCommandRouter
         logger.LogInformation($"Available commands: {string.Join(' ', commandKeys)}");
     }
 
-    public async Task RouteCommandAsync(BotUser invoker, string commandText, 
+    public async Task RouteCommandAsync(InvokingContext invoker, string commandText, 
         CancellationToken cancellationToken = default)
     {
+        using var scope = serviceProvider.CreateScope();
+        var invokerUser = await scope.ServiceProvider.GetRequiredService<IUserRepository>()
+            .GetEntityAsync(invoker.UserId, cancellationToken);
+        if (invokerUser == null)
+        {
+            throw new ArgumentException($"User {invoker.UserId} doesn't exist");
+        }
+        
         bool hasFound = false;
         foreach (var commandKey in commandKeys)
         {
             if (commandText.StartsWith(commandKey))
             {
-                var arguments = commandText[commandKey.Length..].Trim().Split(' ');
                 if (commandHandlers.TryGetValue(commandKey, out var invokeContext))
                 {
+                    var permissionManager = scope.ServiceProvider.GetRequiredService<IPermissionManager>();
+                    var userPermissions = permissionManager.GetPermissions(invokerUser.Role);
+                    if (invokeContext.RequiredPermissions != Permission.None
+                        && (invokeContext.RequiredPermissions & userPermissions) != invokeContext.RequiredPermissions)
+                    {
+                        throw new UnauthorizedAccessException($"User {invoker.UserId} doesn't have required permissions" +
+                                                              $"{string.Join(' ', invokeContext.RequiredPermissions)}");
+                    }
+
+                    var arguments = commandText[commandKey.Length..].Trim().Split(' ');
                     var methodParams = new List<object>();
                     int paramIndex = 0;
                     foreach (var param in invokeContext.MethodParameters)
                     {
-                        if (param.ParameterType == typeof(BotUser))
+                        if (param.ParameterType == typeof(InvokingContext))
                         {
                             methodParams.Add(invoker);
                         }
@@ -101,8 +130,7 @@ public class BotCommandRouter : IBotCommandRouter
                             throw new ArgumentException($"Missing argument for parameter '{param.Name}'");
                         }
                     }
-
-                    using var scope = serviceProvider.CreateScope();
+                    
                     var controller = scope.ServiceProvider.GetService(invokeContext.ControllerType);
                     if (controller == null)
                     {
@@ -121,10 +149,9 @@ public class BotCommandRouter : IBotCommandRouter
                     {
                         invokeContext.Method.Invoke(controller, methodParams.ToArray());
                     }
-                    
                     hasFound = true;
-                    break;
                 }
+                break;
             }
         }
         if (!hasFound)
