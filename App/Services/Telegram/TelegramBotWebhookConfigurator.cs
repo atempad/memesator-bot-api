@@ -4,27 +4,27 @@ using Microsoft.Extensions.Options;
 namespace App.Services.Telegram;
 
 public class TelegramBotWebhookConfigurator(
-    ITelegramBotApi _botApi,
-    IOptions<TelegramBotSettings> _botOptions,
-    IHostEnvironment _environment,
-    ILogger<TelegramBotWebhookConfigurator> _logger) : IHostedService
+    IBotClient botClient,
+    IOptions<TelegramBotSettings> botOptions,
+    IHostEnvironment environment,
+    ILogger<TelegramBotWebhookConfigurator> logger) : IHostedService
 {
-    private readonly TelegramBotSettings _botConfig = _botOptions.Value;
-    private string _webhookUrlRestore = string.Empty;
+    private readonly TelegramBotSettings botConfig = botOptions.Value;
+    private string webhookUrlRestore = string.Empty;
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Setting webhook: {WebhookURL}", _botConfig.WebhookURL);
-        _webhookUrlRestore = await _botApi.GetWebhookAsync(cancellationToken);
-        await _botApi.SetWebhookAsync(_botConfig.WebhookURL, _botConfig.ApiSecret, cancellationToken);
+        logger.LogInformation("Setting webhook: {WebhookURL}", botConfig.WebhookURL);
+        webhookUrlRestore = await botClient.GetWebhookAsync(cancellationToken);
+        await botClient.SetWebhookAsync(botConfig.WebhookURL, botConfig.ApiSecret, cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (_environment.IsDevelopment())
+        if (environment.IsDevelopment())
         {
-            _logger.LogInformation("Restore webhook: {WebhookURL}", _webhookUrlRestore);
-            await _botApi.SetWebhookAsync(_webhookUrlRestore, _botConfig.ApiSecret, cancellationToken);
+            logger.LogInformation("Restore webhook: {WebhookURL}", webhookUrlRestore);
+            await botClient.SetWebhookAsync(webhookUrlRestore, botConfig.ApiSecret, cancellationToken);
         }
     }
 }

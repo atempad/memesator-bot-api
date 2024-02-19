@@ -1,6 +1,7 @@
 using App.Attributes;
 using App.Models.API;
-using App.Services.Operations;
+using App.Models.DB;
+using App.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Controllers;
@@ -8,8 +9,8 @@ namespace App.Controllers;
 [ApiController]
 [Route("telegram")]
 public class TelegramBotController(
-    ITelegramBotOperationResolver botOperationResolver,
-    ILogger<TelegramBotController> _logger) : ControllerBase
+    IBotCommandRouter botCommandRouter,
+    ILogger<TelegramBotController> logger) : ControllerBase
 {
     [HttpPost("update")]
     [ValidateTelegramBotApiSecret]
@@ -17,11 +18,39 @@ public class TelegramBotController(
         [FromBody] TelegramUpdate update,
         CancellationToken cancellationToken)
     {
-        botOperationResolver.Setup(update);
-        var command = botOperationResolver.Resolve();
-        if (command is not null)
+        if (update.Message == null 
+            || string.IsNullOrWhiteSpace(update.Message.Text)
+            || update.Message.From == null
+            || string.IsNullOrWhiteSpace(update.Message.From.Username))
         {
-            await command.InvokeAsync(cancellationToken);
+            return BadRequest("Invalid command");
+        }
+        TelegramUser sender = update.Message.From;
+        TelegramChat chat = update.Message.Chat;
+        var invoker = new BotUser
+        {
+            Id = sender.Username,
+            Username = sender.Username,
+            ChatId = chat.Id.ToString()
+        };
+        try
+        {
+            await botCommandRouter.RouteCommandAsync(invoker, update.Message.Text, cancellationToken);
+        }
+        catch (ArgumentException ex)
+        {
+            logger.LogError(ex.Message);
+            return BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            logger.LogError(ex.Message);
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex.Message);
+            return Problem(ex.Message);
         }
         return Ok();
     }

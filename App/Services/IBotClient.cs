@@ -1,6 +1,6 @@
 namespace App.Services;
 
-public interface IBotApi
+public interface IBotClient
 {
     Task SendTextMessageAsync(string receiverId, string message, CancellationToken cancellationToken = default);
     Task SetWebhookAsync(string url, string secretToken, CancellationToken cancellationToken = default);

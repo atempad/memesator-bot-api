@@ -1,7 +1,10 @@
+using System.Reflection;
+using App.Controllers.BotCommandControllers;
+using App.Extensions;
 using App.Middlewares;
 using App.Repositories;
+using App.Services;
 using App.Services.Commands;
-using App.Services.Operations;
 using App.Services.Telegram;
 using App.Settings;
 using Microsoft.Azure.Cosmos;
@@ -15,23 +18,23 @@ public class Startup(IConfiguration configuration)
     public void ConfigureServices(IServiceCollection services)
     {
         ConfigureOptions<TelegramBotSettings>(services);
-        services
-            .AddHttpClient("Bot")
-            .AddTypedClient<ITelegramBotApi, TelegramBotApi>();
         
-        DbSettings dbSettings = ConfigureOptions<DbSettings>(services);
-        services.AddSingleton(new CosmosClient(dbSettings.AccountEndpoint, dbSettings.AccountKey));
-        services.AddSingleton<ISubscriptionRepository, SubscriptionRepository>();
-        services.AddSingleton<IUserRepository, UserRepository>();
-        
-        services.AddScoped<ITelegramBotOperationResolver, TelegramBotOperationResolver>();
-        services.AddScoped<IUrlProcessCommandResolver, UrlProcessingCommandResolver>();
-        
+        services.AddHttpClient("BotHttpClient").AddTypedClient<IBotClient, TelegramBotClient>();
         services.AddHostedService<TelegramBotWebhookConfigurator>();
         
-        services
-            .AddControllers()
-            .AddNewtonsoftJson();
+        DbSettings dbSettings = ConfigureOptions<DbSettings>(services);
+        services.AddScoped<CosmosClient>(_ => new CosmosClient(dbSettings.AccountEndpoint, dbSettings.AccountKey));
+        services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        
+        services.AddScoped<IUrlProcessCommandResolver, UrlProcessingCommandResolver>();
+        
+        services.AddSingleton<IBotCommandRouter, BotCommandRouter>();
+        var botCommandControllerTypeProvider = new BotCommandControllerTypeProvider();
+        services.AddSingleton<IBotCommandControllerTypeProvider>(botCommandControllerTypeProvider);
+        
+        services.AddBotCommandControllers(botCommandControllerTypeProvider);
+        services.AddControllers().AddNewtonsoftJson();
     }
     
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

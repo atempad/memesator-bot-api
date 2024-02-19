@@ -5,14 +5,14 @@ using Telegram.Bot.Types.Enums;
 
 namespace App.Services.Telegram;
 
-public class TelegramBotApi : ITelegramBotApi
+public class TelegramBotClient : IBotClient
 {
-    private readonly TelegramBotClient _telegramBotClient;
+    private readonly global::Telegram.Bot.TelegramBotClient _telegramBotClient;
 
-    public TelegramBotApi(IOptions<TelegramBotSettings> telegramBotOptions, HttpClient? httpClient = default)
+    public TelegramBotClient(IOptions<TelegramBotSettings> telegramBotOptions, HttpClient? httpClient = default)
     {
         TelegramBotClientOptions options = new(telegramBotOptions.Value.ApiToken);
-        _telegramBotClient = new TelegramBotClient(options, httpClient);
+        _telegramBotClient = new global::Telegram.Bot.TelegramBotClient(options, httpClient);
     }
     
     public async Task SendTextMessageAsync(string receiverId, string text, CancellationToken cancellationToken = default)
@@ -26,7 +26,7 @@ public class TelegramBotApi : ITelegramBotApi
     {
         await _telegramBotClient.SetWebhookAsync(
             url: url,
-            dropPendingUpdates: false,
+            dropPendingUpdates: true,
             allowedUpdates: [UpdateType.Message],
             secretToken: secretToken,
             cancellationToken: cancellationToken);

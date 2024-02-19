@@ -1,12 +1,12 @@
 namespace App.Services.Commands;
 
 public class SendTextMessageToChatCommand(
-    IBotApi _botApi,
+    IBotClient botClient,
     string _chatId, 
     string _message) : IAsyncCommand
 {
     public async Task InvokeAsync(CancellationToken cancellationToken = default)
     {
-        await _botApi.SendTextMessageAsync(_chatId, _message, cancellationToken);
+        await botClient.SendTextMessageAsync(_chatId, _message, cancellationToken);
     }
 }
