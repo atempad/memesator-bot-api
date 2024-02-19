@@ -5,6 +5,7 @@ namespace App.Repositories;
 public interface IRepository<TEntity, in TId> : IRepository 
     where TEntity : IEntity
 {
+    Task<bool> ReplaceEntityAsync(TEntity serviceUser, CancellationToken cancellationToken = default);
     Task<bool> AddEntityAsync(TEntity entity, CancellationToken cancellationToken = default);
     Task<TEntity?> GetEntityAsync(TId id, CancellationToken cancellationToken = default);
     Task<IEnumerable<TEntity>> GetAllEntitiesAsync(string? query = null, CancellationToken cancellationToken = default);

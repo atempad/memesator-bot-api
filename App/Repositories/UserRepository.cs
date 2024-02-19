@@ -9,6 +9,20 @@ public class UserRepository(CosmosClient _cosmosClient) : IUserRepository
     private readonly Container _container = _cosmosClient.GetContainer(
         Constants.DB.Id, Constants.DB.Containers.Users);
 
+    public async Task<bool> ReplaceEntityAsync(ServiceUser serviceUser, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _container.ReplaceItemAsync(serviceUser, serviceUser.Id, new PartitionKey(serviceUser.Id), 
+                cancellationToken: cancellationToken);
+            return await Task.FromResult(true);
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return await Task.FromResult(false);
+        }
+    }
+    
     public async Task<bool> AddEntityAsync(ServiceUser serviceUser, CancellationToken cancellationToken = default)
     {
         try

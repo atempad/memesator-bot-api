@@ -9,6 +9,21 @@ public class SubscriptionRepository(CosmosClient _cosmosClient) : ISubscriptionR
     private readonly Container _container = _cosmosClient.GetContainer(
         Constants.DB.Id, Constants.DB.Containers.Subscribtions);
 
+    public async Task<bool> ReplaceEntityAsync(Subscription subscription, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _container.ReplaceItemAsync(subscription, subscription.Id, new PartitionKey(subscription.Id), 
+                cancellationToken: cancellationToken);
+            return await Task.FromResult(true);
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return await Task.FromResult(false);
+        }
+    }
+    
+    
     public async Task<bool> AddEntityAsync(Subscription subscription, CancellationToken cancellationToken = default)
     {
         try
