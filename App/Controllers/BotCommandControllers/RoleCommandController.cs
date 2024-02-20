@@ -15,7 +15,7 @@ public class RoleCommandController(
     IPermissionManager permissionManager) : IBotCommandController
 {
     [BotCommandRoute("set")]
-    [RequiredPermission(Permission.AdminPermissions)]
+    [RequiredPermission(Permission.GrantPermissions | Permission.RevokePermissions)]
     public async Task SetUserRoleAsync(InvokingContext invoker, string userId, string roleName, CancellationToken cancellationToken = default)
     {
         var newRole = permissionManager.GetRoleByName(roleName);
@@ -51,7 +51,7 @@ public class RoleCommandController(
     }
     
     [BotCommandRoute("get")]
-    [RequiredPermission(Permission.AdminPermissions)]
+    [RequiredPermission(Permission.ReadPermissions)]
     public async Task GetUserRoleAsync(InvokingContext invoker, string userId, CancellationToken cancellationToken = default)
     {
         var user = await userRepository.GetEntityAsync(userId, cancellationToken);

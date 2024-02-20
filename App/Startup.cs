@@ -1,4 +1,3 @@
-using System.Reflection;
 using App.Controllers.BotCommandControllers;
 using App.Extensions;
 using App.Middlewares;

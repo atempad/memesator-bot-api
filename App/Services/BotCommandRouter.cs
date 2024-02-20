@@ -2,7 +2,6 @@ using System.Reflection;
 using App.Attributes;
 using App.Controllers.BotCommandControllers;
 using App.Models.API;
-using App.Models.DB;
 using App.Repositories;
 using App.Services.Permissions;
 
@@ -64,19 +63,15 @@ public class BotCommandRouter : IBotCommandRouter
             .ThenByDescending(c => c.Length)
             .ToList();
         
-        logger.LogInformation($"Available commands: {string.Join(' ', commandKeys)}");
+        logger.LogInformation($"Available commands: {string.Join(", ", commandKeys)}");
     }
 
-    public async Task RouteCommandAsync(InvokingContext invoker, string commandText, 
+    public async Task RouteCommandAsync(InvokingContext invokingContext, string commandText, 
         CancellationToken cancellationToken = default)
     {
         using var scope = serviceProvider.CreateScope();
         var invokerUser = await scope.ServiceProvider.GetRequiredService<IUserRepository>()
-            .GetEntityAsync(invoker.UserId, cancellationToken);
-        if (invokerUser == null)
-        {
-            throw new ArgumentException($"User {invoker.UserId} doesn't exist");
-        }
+            .GetEntityAsync(invokingContext.UserId, cancellationToken);
         
         bool hasFound = false;
         foreach (var commandKey in commandKeys)
@@ -86,12 +81,11 @@ public class BotCommandRouter : IBotCommandRouter
                 if (commandHandlers.TryGetValue(commandKey, out var invokeContext))
                 {
                     var permissionManager = scope.ServiceProvider.GetRequiredService<IPermissionManager>();
-                    var userPermissions = permissionManager.GetPermissions(invokerUser.Role);
                     if (invokeContext.RequiredPermissions != Permission.None
-                        && (invokeContext.RequiredPermissions & userPermissions) != invokeContext.RequiredPermissions)
+                        && !permissionManager.CheckPermissions(invokerUser?.Role, invokeContext.RequiredPermissions))
                     {
-                        throw new UnauthorizedAccessException($"User {invoker.UserId} doesn't have required permissions" +
-                                                              $"{string.Join(' ', invokeContext.RequiredPermissions)}");
+                        throw new UnauthorizedAccessException($"User {invokingContext.UserId} doesn't have required permissions" +
+                                                              $"{string.Join(", ", invokeContext.RequiredPermissions)}");
                     }
 
                     var arguments = commandText[commandKey.Length..].Trim().Split(' ');
@@ -101,7 +95,7 @@ public class BotCommandRouter : IBotCommandRouter
                     {
                         if (param.ParameterType == typeof(InvokingContext))
                         {
-                            methodParams.Add(invoker);
+                            methodParams.Add(invokingContext);
                         }
                         else if (param.ParameterType == typeof(CancellationToken))
                         {

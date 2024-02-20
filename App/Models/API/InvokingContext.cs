@@ -1,8 +1,8 @@
 namespace App.Models.API;
 
-public class InvokingContext(string userId, string chatId)
+public class InvokingContext
 {
-    public string UserId { get; } = userId;
+    public required string UserId { get; init; }
 
-    public string ChatId { get; } = chatId;
+    public required string ChatId { get; init; }
 }

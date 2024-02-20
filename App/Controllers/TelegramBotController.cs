@@ -23,10 +23,14 @@ public class TelegramBotController(
             && update.Message.From != null
             && !string.IsNullOrWhiteSpace(update.Message.From.Username))
         {
-            var invoker = new InvokingContext(update.Message.From.Username, update.Message.Chat.Id.ToString());
+            var invokingContext = new InvokingContext
+            {
+                UserId = update.Message.From.Username,
+                ChatId = update.Message.Chat.Id.ToString()
+            };
             try
             {
-                await botCommandRouter.RouteCommandAsync(invoker, update.Message.Text, cancellationToken);
+                await botCommandRouter.RouteCommandAsync(invokingContext, update.Message.Text, cancellationToken);
             }
             catch (Exception ex)
             {

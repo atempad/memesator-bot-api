@@ -4,5 +4,5 @@ namespace App.Services;
 
 public interface IBotCommandRouter
 {
-    Task RouteCommandAsync(InvokingContext invoker, string commandText, CancellationToken cancellationToken = default);
+    Task RouteCommandAsync(InvokingContext invokingContext, string commandText, CancellationToken cancellationToken = default);
 }

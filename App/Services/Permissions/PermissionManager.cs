@@ -13,6 +13,11 @@ public class PermissionManager : IPermissionManager
         return permissionsByRole.GetValueOrDefault(role ?? Role.User, Permission.None);
     }
 
+    public bool CheckPermissions(Role? role, Permission requiredPermissions)
+    {
+        return (GetPermissions(role) & requiredPermissions) == requiredPermissions;
+    }
+
     public Role? GetRoleByName(string roleName)
     {
         var enumNames = Enum.GetNames(typeof(Role)).Select(name => name.ToLower()).ToArray();
