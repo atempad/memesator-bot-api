@@ -2,16 +2,15 @@ using App.Models.DB;
 
 namespace App.Repositories;
 
-public interface IRepository<TEntity, in TId> : IRepository 
-    where TEntity : IEntity
+public interface IRepository<TEntity, in TId> 
+    where TEntity : class, IEntity
 {
-    Task<bool> ReplaceEntityAsync(TEntity serviceUser, CancellationToken cancellationToken = default);
-    Task<bool> AddEntityAsync(TEntity entity, CancellationToken cancellationToken = default);
-    Task<TEntity?> GetEntityAsync(TId id, CancellationToken cancellationToken = default);
+    Task AddOrReplaceEntityAsync(TEntity entity, CancellationToken cancellationToken = default);
+    Task ReplaceEntityAsync(TEntity entity, CancellationToken cancellationToken = default);
+    Task AddEntityAsync(TEntity entity, CancellationToken cancellationToken = default);
+    Task<TEntity> GetEntityAsync(TId id, CancellationToken cancellationToken = default);
+    Task<TEntity?> GetEntityOrDefaultAsync(TId id, TEntity? defaultValue = null, CancellationToken cancellationToken = default);
     Task<IEnumerable<TEntity>> GetAllEntitiesAsync(string? query = null, CancellationToken cancellationToken = default);
-    Task<bool> RemoveEntityAsync(TId id, CancellationToken cancellationToken = default);
-}
-
-public interface IRepository
-{
+    Task<IEnumerable<TEntity>> GetEntitiesAsync(IEnumerable<TId> ids, CancellationToken cancellationToken = default);
+    Task RemoveEntityAsync(TId id, CancellationToken cancellationToken = default);
 }

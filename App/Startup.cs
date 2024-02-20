@@ -1,8 +1,9 @@
-using App.Controllers.BotCommandControllers;
 using App.Extensions;
 using App.Middlewares;
 using App.Repositories;
 using App.Services;
+using App.Services.CommandHandlers;
+using App.Services.CommandHandlers.Providers;
 using App.Services.Commands;
 using App.Services.Permissions;
 using App.Services.Telegram;
@@ -31,10 +32,17 @@ public class Startup(IConfiguration configuration)
         services.AddScoped<IUrlProcessCommandResolver, UrlProcessingCommandResolver>();
         
         services.AddSingleton<IBotCommandRouter, BotCommandRouter>();
-        var botCommandControllerTypeProvider = new BotCommandControllerTypeProvider();
-        services.AddSingleton<IBotCommandControllerTypeProvider>(botCommandControllerTypeProvider);
+        var botCommandControllerTypeProvider = new BotCommandHandlerTypeProvider();
+        services.AddSingleton<IBotCommandHandlerTypeProvider>(botCommandControllerTypeProvider);
+        services.AddBotCommandHandlers(botCommandControllerTypeProvider);
+        services.AddScoped<StartCommand>();
+        services.AddScoped<StopCommand>();
+        services.AddScoped<SetRoleCommand>();
+        services.AddScoped<GetRoleCommand>();
+        services.AddScoped<SubscribeUserCommand>();
+        services.AddScoped<SubscribeChatCommand>();
+        services.AddScoped<ProcessUrlCommand>();
         
-        services.AddBotCommandControllers(botCommandControllerTypeProvider);
         services.AddControllers().AddNewtonsoftJson();
     }
     

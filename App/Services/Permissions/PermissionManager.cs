@@ -18,7 +18,7 @@ public class PermissionManager : IPermissionManager
         return (GetPermissions(role) & requiredPermissions) == requiredPermissions;
     }
 
-    public Role? GetRoleByName(string roleName)
+    public Role GetRoleByName(string roleName)
     {
         var enumNames = Enum.GetNames(typeof(Role)).Select(name => name.ToLower()).ToArray();
         for (var i = 0; i < Enum.GetNames(typeof(Role)).Length; i++)
@@ -28,7 +28,7 @@ public class PermissionManager : IPermissionManager
                 return Enum.GetValues<Role>()[i];
             }
         }
-        return null;
+        throw new Exception($"The role with name '{roleName}' does not exist");
     }
 
     public string? GetRoleName(Role role)

@@ -1,8 +1,8 @@
 using System.Reflection;
 using App.Attributes;
-using App.Controllers.BotCommandControllers;
 using App.Models.API;
 using App.Repositories;
+using App.Services.CommandHandlers.Providers;
 using App.Services.Permissions;
 
 namespace App.Services;
@@ -23,14 +23,14 @@ public class BotCommandRouter : IBotCommandRouter
     private readonly List<string> commandKeys = [];
 
     public BotCommandRouter(
-        IBotCommandControllerTypeProvider botCommandControllerTypeProvider, 
+        IBotCommandHandlerTypeProvider botCommandHandlerTypeProvider, 
         IServiceProvider serviceProvider,
         ILogger<BotCommandRouter> logger)
     {
         this.serviceProvider = serviceProvider;
         this.logger = logger;
         
-        foreach (var controllerType in botCommandControllerTypeProvider.GetAllTypes())
+        foreach (var controllerType in botCommandHandlerTypeProvider.GetAllTypes())
         {
             var classRoute = controllerType
                 .GetCustomAttribute<BotCommandRouteAttribute>()?.Route?.ToLower() ?? "";
@@ -71,7 +71,7 @@ public class BotCommandRouter : IBotCommandRouter
     {
         using var scope = serviceProvider.CreateScope();
         var invokerUser = await scope.ServiceProvider.GetRequiredService<IUserRepository>()
-            .GetEntityAsync(invokingContext.UserId, cancellationToken);
+            .GetEntityOrDefaultAsync(invokingContext.UserId, null, cancellationToken);
         
         bool hasFound = false;
         foreach (var commandKey in commandKeys)
@@ -125,11 +125,7 @@ public class BotCommandRouter : IBotCommandRouter
                         }
                     }
                     
-                    var controller = scope.ServiceProvider.GetService(invokeContext.ControllerType);
-                    if (controller == null)
-                    {
-                        throw new Exception($"Controller of type {invokeContext.ControllerType.Name} is not found");
-                    }
+                    var controller = scope.ServiceProvider.GetRequiredService(invokeContext.ControllerType);
                     
                     logger.LogInformation($"Invoking {invokeContext.ControllerType.Name}:{invokeContext.Method.Name}/n" +
                                           $"({string.Join(',', invokeContext.MethodParameters.Select((x, i) => x.Name + "=" + methodParams[i]))})");

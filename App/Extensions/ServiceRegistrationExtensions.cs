@@ -1,10 +1,10 @@
-using App.Controllers.BotCommandControllers;
+using App.Services.CommandHandlers.Providers;
 
 namespace App.Extensions;
 
 public static class ServiceRegistrationExtensions
 {
-    public static IServiceCollection AddBotCommandControllers(this IServiceCollection services, IBotCommandControllerTypeProvider provider) 
+    public static IServiceCollection AddBotCommandHandlers(this IServiceCollection services, IBotCommandHandlerTypeProvider provider) 
     {
         foreach (var botCommandControllerType in provider.GetAllTypes())
         {
