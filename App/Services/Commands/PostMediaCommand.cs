@@ -1,17 +1,19 @@
 using App.Repositories;
+using App.Services.CommandResolvers;
 
 namespace App.Services.Commands;
 
-public class ProcessUrlCommand(
+public class PostMediaCommand(
     IBotClient botClient,
-    IUrlProcessCommandResolver urlProcessingCommandResolver,
+    IMediaScraperCommandResolver mediaScraperCommandResolver,
+    DownloadVideoCommand downloadVideoCommand,
     ISubscriptionRepository subscriptionRepository,
     IUserRepository userRepository) : IAsyncCommand
 {
     private string invokerUserId = string.Empty;
     private string urlString = string.Empty;
     
-    public ProcessUrlCommand Setup(string invokerUserId, string urlString)
+    public PostMediaCommand Setup(string invokerUserId, string urlString)
     {
         this.invokerUserId = invokerUserId;
         this.urlString = urlString;
@@ -20,19 +22,17 @@ public class ProcessUrlCommand(
     
     public async Task InvokeAsync(CancellationToken cancellationToken = default)
     {
-        var urlProcessingCommand = urlProcessingCommandResolver.Resolve(urlString);
-        if (urlProcessingCommand == null)
+        var mediaScraperCommand = mediaScraperCommandResolver.Resolve(urlString);
+        if (mediaScraperCommand == null)
         {
             return;
         }
-        var processedUrlString = await urlProcessingCommand.InvokeAsync(cancellationToken);
+        var mediaUrlString = await mediaScraperCommand.InvokeAsync(cancellationToken);
+        var mediaInfo = await downloadVideoCommand.Setup(mediaUrlString).InvokeAsync(cancellationToken);
+        
         var userSubscriptions = await subscriptionRepository.GetUserSubscriptionsAsync(invokerUserId, cancellationToken: cancellationToken);
         var subscribers = await userRepository.GetEntitiesAsync(userSubscriptions.Select(s => s.SubscriberUserId), cancellationToken: cancellationToken);
         
-        foreach (var chatId in subscribers.Select(s => s.ChatId))
-        {
-            await botClient.SendTextMessageAsync(chatId, processedUrlString, cancellationToken);
-            await Task.Delay(TimeSpan.FromSeconds(1f / 30f), cancellationToken); // https://core.telegram.org/bots/faq#broadcasting-to-users
-        }
+        await botClient.SendVideoAsync(subscribers.Select(s => s.ChatId).ToArray(), mediaInfo, cancellationToken);
     }
 }

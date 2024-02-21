@@ -17,6 +17,11 @@ public class RoleCommandHandler(
     public async Task SetUserRoleAsync(InvokingContext invoker, string targetUserId, string targetUserNewRoleName, 
         CancellationToken cancellationToken = default)
     {
+        if (invoker.UserId == targetUserId)
+        {
+            await botClient.SendTextMessageAsync(invoker.ChatId, "You cannot change your own role", cancellationToken);
+            return;
+        }
         await setRoleCommand.Setup(targetUserId, targetUserNewRoleName).InvokeAsync(cancellationToken);
         await botClient.SendTextMessageAsync(invoker.ChatId, 
             $"The role '{targetUserNewRoleName}' has been succesfully set for user '{targetUserId}'", cancellationToken);

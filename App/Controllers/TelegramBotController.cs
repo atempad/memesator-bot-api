@@ -9,6 +9,7 @@ namespace App.Controllers;
 [ApiController]
 [Route("telegram")]
 public class TelegramBotController(
+    IHostEnvironment environment,
     IBotClient botClient,
     IBotCommandRouter botCommandRouter,
     ILogger<TelegramBotController> logger) : ControllerBase
@@ -35,8 +36,11 @@ public class TelegramBotController(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex.Message);
-                await botClient.SendTextMessageAsync(invokingContext.ChatId, ex.Message, cancellationToken);
+                logger.LogError(ex.ToString());
+                if (environment.IsDevelopment())
+                {
+                    await botClient.SendTextMessageAsync(invokingContext.ChatId, ex.ToString(), cancellationToken);
+                }
             }
         }
         return Ok(); // return ok in any case to stop retry spamming

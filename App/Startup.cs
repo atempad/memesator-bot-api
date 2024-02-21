@@ -2,13 +2,14 @@ using App.Extensions;
 using App.Middlewares;
 using App.Repositories;
 using App.Services;
-using App.Services.CommandHandlers;
 using App.Services.CommandHandlers.Providers;
+using App.Services.CommandResolvers;
 using App.Services.Commands;
 using App.Services.Permissions;
 using App.Services.Telegram;
 using App.Settings;
 using Microsoft.Azure.Cosmos;
+using Newtonsoft.Json.Serialization;
 
 namespace App;
 
@@ -19,17 +20,18 @@ public class Startup(IConfiguration configuration)
     public void ConfigureServices(IServiceCollection services)
     {
         ConfigureOptions<TelegramBotSettings>(services);
+        ConfigureOptions<AppSettings>(services);
         
-        services.AddHttpClient("BotHttpClient").AddTypedClient<IBotClient, TelegramBotClient>();
+        services.AddHttpClient("BotHttpClient").AddTypedClient<IBotClient, TelegramBotClientImpl>();
         services.AddHostedService<TelegramBotWebhookConfigurator>();
         
         DbSettings dbSettings = ConfigureOptions<DbSettings>(services);
-        services.AddScoped<CosmosClient>(_ => new CosmosClient(dbSettings.AccountEndpoint, dbSettings.AccountKey));
+        services.AddScoped<CosmosClient>(_ => 
+            new CosmosClient(dbSettings.AccountEndpoint, dbSettings.AccountKey));
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddScoped<IPermissionManager, PermissionManager>();
-        services.AddScoped<IUrlProcessCommandResolver, UrlProcessingCommandResolver>();
         
         services.AddSingleton<IBotCommandRouter, BotCommandRouter>();
         var botCommandControllerTypeProvider = new BotCommandHandlerTypeProvider();
@@ -41,9 +43,19 @@ public class Startup(IConfiguration configuration)
         services.AddScoped<GetRoleCommand>();
         services.AddScoped<SubscribeUserCommand>();
         services.AddScoped<SubscribeChatCommand>();
-        services.AddScoped<ProcessUrlCommand>();
+        services.AddScoped<PostMediaCommand>();
         
-        services.AddControllers().AddNewtonsoftJson();
+        services.AddScoped<IMediaScraperCommandResolver, MediaScraperCommandResolver>();
+        services.AddScoped<InstagramReelsScraperCommand>();
+        services.AddScoped<DownloadVideoCommand>();
+
+        services.AddControllers().AddNewtonsoftJson(options =>
+        {
+            options.SerializerSettings.ContractResolver = new DefaultContractResolver
+            {
+                NamingStrategy = new SnakeCaseNamingStrategy()
+            };
+        });
     }
     
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

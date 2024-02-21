@@ -7,15 +7,15 @@ namespace App.Services.CommandHandlers;
 
 [BotCommandHandler]
 [BotCommandRoute]
-public class ProcessUrlCommandHandler(
-    ProcessUrlCommand processUrlCommand) : IBotCommandHandler
+public class PostMediaCommandHandler(
+    PostMediaCommand postMediaCommand) : IBotCommandHandler
 {
     [BotCommandRoute]
     [RequiredPermission(Permission.AddPosts)]
-    public async Task ProcessUrlAsync(InvokingContext invoker, string urlString, 
+    public async Task PostMediaAsync(InvokingContext invoker, string urlString, 
         CancellationToken cancellationToken = default)
     {
-        await processUrlCommand.Setup(invoker.UserId, urlString)
+        await postMediaCommand.Setup(invoker.UserId, urlString)
             .InvokeAsync(cancellationToken);
     }
 }

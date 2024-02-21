@@ -71,10 +71,8 @@ public class CosmosContainerRepository<TEntity>(
             .ToFeedIterator();
         while (setIterator.HasMoreResults)
         {
-            foreach(var item in await setIterator.ReadNextAsync(cancellationToken))
-            {
-                entities.Add(item);
-            }
+            var response = await setIterator.ReadNextAsync(cancellationToken);
+            entities.AddRange(response.Resource);
         }
         return entities;
     }

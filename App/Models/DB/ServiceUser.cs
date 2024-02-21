@@ -7,17 +7,15 @@ namespace App.Models.DB;
 [JsonObject(MemberSerialization.OptIn, NamingStrategyType = typeof(SnakeCaseNamingStrategy))]
 public class ServiceUser : IEntity
 {
-    [JsonProperty(Required = Required.Always)]
+    [JsonProperty(PropertyName = "id", Required = Required.Always)]
     public required string Id { get; set; }
     
-    [JsonProperty(Required = Required.Always)]
+    [JsonProperty(PropertyName = "chat_id", Required = Required.Always)]
     public required string ChatId { get; set; }
     
-    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    [JsonProperty(PropertyName = "role", DefaultValueHandling = DefaultValueHandling.Ignore)]
     public Role? Role { get; set; }
     
-    [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+    [JsonProperty(PropertyName = "username", DefaultValueHandling = DefaultValueHandling.Ignore)]
     public string? Username { get; set; }
-
-    public bool IsValid => !string.IsNullOrWhiteSpace(Id) && !string.IsNullOrWhiteSpace(ChatId);
 }

@@ -13,12 +13,7 @@ public static class Constants
         public static class Containers
         {
             public const string Users = "Users";
-            public const string Subscribtions = "Subscriptions";
+            public const string Subscriptions = "Subscriptions";
         }
-    }
-    public static class Bot
-    {
-        public const string StartCommand = "/start";
-        public const string StopCommand = "/stop";
     }
 }

@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "memesarot-bot-api", "memesarot-bot-api.csproj", "{454F86FF-B2A3-4BE8-84C3-498503254423}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "memesator-bot-api", "memesator-bot-api.csproj", "{454F86FF-B2A3-4BE8-84C3-498503254423}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

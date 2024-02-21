@@ -5,7 +5,7 @@ using Microsoft.Azure.Cosmos.Linq;
 namespace App.Repositories;
 
 public class SubscriptionRepository(CosmosClient cosmosClient) 
-    : CosmosContainerRepository<Subscription>(cosmosClient, Constants.DB.Id, Constants.DB.Containers.Subscribtions), 
+    : CosmosContainerRepository<Subscription>(cosmosClient, Constants.DB.Id, Constants.DB.Containers.Subscriptions), 
         ISubscriptionRepository
 {
     public async Task<IEnumerable<Subscription>> GetUserSubscriptionsAsync(string userId, CancellationToken cancellationToken = default)
@@ -16,10 +16,8 @@ public class SubscriptionRepository(CosmosClient cosmosClient)
             .ToFeedIterator();
         while (setIterator.HasMoreResults)
         {
-            foreach(var item in await setIterator.ReadNextAsync(cancellationToken))
-            {
-                subscriptions.Add(item);
-            }
+            var respone = await setIterator.ReadNextAsync(cancellationToken); 
+            subscriptions.AddRange(respone.Resource);
         }
         return subscriptions;
     }
