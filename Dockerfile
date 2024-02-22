@@ -1,17 +1,26 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 EXPOSE 80
 
-RUN apt-get update
-RUN apt-get install -y ffmpeg
-RUN apt-get clean
-ENV AppSettings__FFmpegPath=/usr/bin/ffmpeg
+RUN apt-get update && apt-get install -y \
+    ffmpeg unzip xvfb libxi6 libgconf-2-4 jq libjq1 libonig5 libxkbcommon0 libxss1 \
+    libglib2.0-0 libnss3 libfontconfig1 libatk-bridge2.0-0 libatspi2.0-0 libgtk-3-0 \
+    libpango-1.0-0 libgdk-pixbuf2.0-0 libxcomposite1 libxcursor1 libxdamage1 libxtst6 \
+    libappindicator3-1 libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libxfixes3 \
+    libdbus-1-3 libexpat1 libgcc1 libnspr4 libgbm1 libpangocairo-1.0-0 libstdc++6 \
+    libx11-6 libx11-xcb1 libxcb1 libxext6 libxrandr2 libxrender1 gconf-service \
+    ca-certificates fonts-liberation libappindicator1 lsb-release xdg-utils curl wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    LATEST_CHROME_RELEASE=$(curl -s https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json | jq '.channels.Stable') && \
+    LATEST_CHROME_URL=$(echo "$LATEST_CHROME_RELEASE" | jq -r '.downloads.chrome[] | select(.platform == "linux64") | .url') && \
+    wget -N "$LATEST_CHROME_URL" -P /tmp/ && \
+    unzip /tmp/chrome-linux64.zip -d /opt/ && \
+    mv /opt/chrome-linux64 /opt/chrome && \
+    chmod +x /opt/chrome && \
+    rm /tmp/chrome-linux64.zip
 
-RUN apt-get install -y wget libxss1 libgconf-2-4 gnupg2
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg
-RUN echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] https://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
-RUN apt-get update && apt-get install -y google-chrome-stable
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+ENV AppSettings__FFmpegPath=/usr/bin/ffmpeg
+ENV PUPPETEER_EXECUTABLE_PATH=/opt/chrome/chrome
 
 USER $APP_UID
 WORKDIR /app
