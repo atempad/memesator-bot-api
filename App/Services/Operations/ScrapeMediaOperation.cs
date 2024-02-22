@@ -6,6 +6,12 @@ public class ScrapeMediaOperation(
     IServiceProvider serviceProvider) : IScrapeMediaOperation
 {
     private string mediaUrl = string.Empty;
+
+    private readonly Dictionary<string, Type> downloaderMap = new()
+    {
+        { "www.instagram.com/reel/", typeof(DownloadInstagramReelOperation) },
+        { "www.youtube.com/shorts/", typeof(DownloadYoutubeShortOperation) },
+    };
     
     public IScrapeMediaOperation Setup(string mediaUrl)
     {
@@ -16,17 +22,31 @@ public class ScrapeMediaOperation(
     public async Task<MediaInfo?> InvokeAsync(CancellationToken cancellationToken = default)
     {
         var scope = serviceProvider.CreateScope();
-        if (mediaUrl.Contains("www.instagram.com"))
+        MediaData? mediaData = null;
+        foreach (var (pattern, downloaderType) in downloaderMap)
         {
-            var mediaData = await scope.ServiceProvider
-                .GetRequiredService<DownloadInstagramReelsOperation>()
-                .Setup(mediaUrl)
-                .InvokeAsync(cancellationToken);
+            if (mediaUrl.Contains(pattern))
+            {
+                mediaData = await DownloadMedia(scope.ServiceProvider, downloaderType, mediaUrl, cancellationToken);
+                break;
+            }
+        }
+        if (mediaData?.MediaType == MediaType.Video)
+        {
             return await scope.ServiceProvider
                 .GetRequiredService<GetVideoMetaAndThumbnailOperation>()
                 .Setup(mediaData)
                 .InvokeAsync(cancellationToken);
         }
         return null;
+    }
+
+    private static async Task<MediaData> DownloadMedia(IServiceProvider serviceProvider,
+        Type downloaderType,
+        string mediaUrl, 
+        CancellationToken cancellationToken = default)
+    {
+        var downloader = serviceProvider.GetRequiredService(downloaderType) as DownloadMediaOperation;
+        return await downloader!.Setup(mediaUrl).InvokeAsync(cancellationToken);
     }
 }

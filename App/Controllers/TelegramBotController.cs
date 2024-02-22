@@ -39,7 +39,7 @@ public class TelegramBotController(
                 logger.LogError(ex.ToString());
                 if (environment.IsDevelopment())
                 {
-                    await botClient.SendTextMessageAsync(invokingContext.ChatId, ex.ToString(), cancellationToken);
+                    await botClient.SendTextMessageAsync(invokingContext.ChatId, ex.Message, cancellationToken);
                 }
             }
         }

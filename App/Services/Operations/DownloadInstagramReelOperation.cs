@@ -5,7 +5,7 @@ using PuppeteerSharp;
 
 namespace App.Services.Operations;
 
-public class DownloadInstagramReelsOperation(
+public class DownloadInstagramReelOperation(
     IHostEnvironment environment) : DownloadMediaOperation
 {
     public override async Task<MediaData> InvokeAsync(CancellationToken cancellationToken = default)
