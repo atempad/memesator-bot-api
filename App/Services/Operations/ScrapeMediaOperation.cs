@@ -9,8 +9,8 @@ public class ScrapeMediaOperation(
 
     private readonly Dictionary<string, Type> downloaderMap = new()
     {
-        { "www.instagram.com/reel/", typeof(DownloadInstagramReelOperation) },
-        { "www.youtube.com/shorts/", typeof(DownloadYoutubeShortOperation) },
+        { "instagram.com/reel/", typeof(DownloadInstagramVideoOperation) },
+        { "youtube.com/", typeof(DownloadYoutubeVideoOperation) },
     };
     
     public IScrapeMediaOperation Setup(string mediaUrl)

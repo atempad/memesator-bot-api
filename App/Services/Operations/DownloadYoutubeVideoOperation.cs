@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using App.Models.API;
 using App.Settings;
 using Microsoft.Extensions.Options;
@@ -5,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace App.Services.Operations;
 
-public class DownloadYoutubeShortOperation(
+public class DownloadYoutubeVideoOperation(
     IOptions<AppSettings> appSettings) : DownloadMediaOperation
 {
     public class MetaData
@@ -34,8 +35,8 @@ public class DownloadYoutubeShortOperation(
         using var httpClient = new HttpClient();
         
         string apiKey = appSettings.Value.YoutubeApiKey;
-        string shortId = GetShortIdFromUrl(urlString);
-        using var metaDataRequest = CreateShortMetaDataRequest(apiKey, shortId);
+        string shortId = GetVideoIdFromUrl(urlString);
+        using var metaDataRequest = CreateVideoMetaDataRequest(apiKey, shortId);
         using var metaDataResponse = await httpClient.SendAsync(metaDataRequest, cancellationToken);
         metaDataResponse.EnsureSuccessStatusCode();
         
@@ -47,11 +48,6 @@ public class DownloadYoutubeShortOperation(
             throw new InvalidOperationException("Failed to get media URL");
         }
         string streamUrl = streamMetaData.Url;
-        int streamContentLength = Convert.ToInt32(streamMetaData.ContentLength);
-        if (streamContentLength > Constants.Video.MaxSize)
-        {
-            throw new InvalidOperationException("Media is too big");
-        }
         
         const int chunkSize = Constants.Video.ChunkSize;
         int currentStart = 0;
@@ -69,7 +65,12 @@ public class DownloadYoutubeShortOperation(
                     var chunkContentStream = await chunkResponse.Content.ReadAsStreamAsync(cancellationToken);
                     await chunkContentStream.CopyToAsync(videoContentStream, cancellationToken);
                     currentStart += chunkSize;
-                    if (currentStart >= chunkResponse.Content.Headers.ContentRange.Length)
+                    var totalLength = chunkResponse.Content.Headers.ContentRange.Length;
+                    if (totalLength > Constants.Video.MaxSize)
+                    {
+                        throw new InvalidOperationException("Media is too big");
+                    }
+                    if (currentStart >= totalLength)
                     {
                         videoContentBytes = videoContentStream.ToArray();
                         endOfFile = true;
@@ -88,7 +89,7 @@ public class DownloadYoutubeShortOperation(
         };
     }
 
-    public static HttpRequestMessage CreateShortMetaDataRequest(string apiKey, string shortId)
+    public static HttpRequestMessage CreateVideoMetaDataRequest(string apiKey, string shortId)
     {
         string requestUrl = $"https://www.youtube.com/youtubei/v1/player?key={apiKey}";
         var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
@@ -116,12 +117,10 @@ public class DownloadYoutubeShortOperation(
         return request;
     }
     
-    public static string GetShortIdFromUrl(string url)
+    public static string GetVideoIdFromUrl(string url)
     {
-        Uri uri = new Uri(url);
-        string path = uri.AbsolutePath;
-        const string shortsPath = "/shorts/";
-        int index = path.IndexOf(shortsPath, StringComparison.OrdinalIgnoreCase);
-        return index != -1 ? path[(index + shortsPath.Length)..] : string.Empty;
+        string pattern = @"(?:https?:\/\/)?(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)([^&\/\?\n]+)";
+        Match match = Regex.Match(url, pattern);
+        return match.Success ? match.Groups[1].Value : string.Empty;
     }
 }
