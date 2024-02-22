@@ -3,7 +3,7 @@ using App.Repositories;
 namespace App.Services.Commands;
 
 public class StopCommand(
-    IUserRepository userRepository) : IAsyncCommand
+    IUserRepository userRepository) : IAsyncCommand<bool>
 {
     private string userId = string.Empty;
     
@@ -13,8 +13,9 @@ public class StopCommand(
         return this;
     }
     
-    public async Task InvokeAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InvokeAsync(CancellationToken cancellationToken = default)
     {
         await userRepository.RemoveEntityAsync(userId, cancellationToken);
+        return true;
     }
 }

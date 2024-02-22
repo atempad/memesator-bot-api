@@ -1,28 +1,19 @@
 using System.Net;
-using App.Settings;
+using App.Models.API;
 using HtmlAgilityPack;
 using PuppeteerSharp;
 
-namespace App.Services.Commands;
+namespace App.Services.Operations;
 
-public class InstagramReelsScraperCommand(
-    IHostEnvironment environment) : IAsyncCommand<string>
+public class DownloadInstagramReelsOperation(
+    IHostEnvironment environment) : DownloadMediaOperation
 {
-    private string urlString = string.Empty;
-    
-    public InstagramReelsScraperCommand Setup(string urlString)
-    {
-        this.urlString = urlString;
-        return this;
-    }
-    
-    public async Task<string> InvokeAsync(CancellationToken cancellationToken = default)
+    public override async Task<MediaData> InvokeAsync(CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(urlString))
         {
             throw new ArgumentException("URL must not be empty", nameof(urlString));
         }
-        
         var launchOptions = new LaunchOptions
         {
             Headless = true,
@@ -45,8 +36,24 @@ public class InstagramReelsScraperCommand(
         
         var videoNode = htmlDoc.DocumentNode.SelectSingleNode("//video");
         var encodedSrc = videoNode?.GetAttributeValue("src", string.Empty);
-        var decodedSrc = WebUtility.HtmlDecode(encodedSrc); //
+        var decodedSrc = WebUtility.HtmlDecode(encodedSrc);
+
+        if (string.IsNullOrWhiteSpace(decodedSrc))
+        {
+            throw new InvalidOperationException("Failed to get media URL");
+        }
         
-        return decodedSrc ?? throw new InvalidOperationException("Failed to get media URL");
+        using var httpClient = new HttpClient();
+        var response = await httpClient.GetAsync(decodedSrc, HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+        
+        var mediaContentBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        
+        return new MediaData
+        {
+            MediaType = MediaType.Video,
+            MediaContentBytes = mediaContentBytes
+        };
     }
 }

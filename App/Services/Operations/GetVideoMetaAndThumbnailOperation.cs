@@ -4,42 +4,32 @@ using FFmpeg.NET;
 using FFmpeg.NET.Events;
 using Microsoft.Extensions.Options;
 
-namespace App.Services.Commands;
+namespace App.Services.Operations;
 
-public class DownloadVideoCommand(
+public class GetVideoMetaAndThumbnailOperation(
     IHostEnvironment environment,
-    IOptions<AppSettings> appSettings) : IAsyncCommand<MediaInfo>
+    IOptions<AppSettings> appSettings) : IAsyncOperation<MediaInfo>
 {
-    private string videoUrlString = string.Empty;
+    private MediaInfo mediaInfo;
 
-    public DownloadVideoCommand Setup(string videoUrlString)
+    public GetVideoMetaAndThumbnailOperation Setup(MediaData mediaData)
     {
-        this.videoUrlString = videoUrlString;
+        mediaInfo.Data = mediaData;
         return this;
     }
     
     public async Task<MediaInfo> InvokeAsync(CancellationToken cancellationToken = default)
     {
-        using var httpClient = new HttpClient();
-
-        var response = await httpClient.GetAsync(videoUrlString, HttpCompletionOption.ResponseHeadersRead,
-            cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        MediaInfo mediaInfo;
         InputFile? videoFile = null;
         string tempVideoPath = string.Empty;
         OutputFile? thumbnailFile = null;
         string thumbnailPath = string.Empty;
         try
         {
-            mediaInfo.MediaType = MediaType.Video;
-            mediaInfo.MediaContentBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-
             var ffmpeg = new Engine(appSettings.Value.FFMpegPath);
             ffmpeg.Data += OnData;
             tempVideoPath = Path.GetTempFileName();
-            await File.WriteAllBytesAsync(tempVideoPath, mediaInfo.MediaContentBytes, cancellationToken);
+            await File.WriteAllBytesAsync(tempVideoPath, mediaInfo.Data.MediaContentBytes, cancellationToken);
             videoFile = new InputFile(tempVideoPath);
             var metaData = await ffmpeg.GetMetaDataAsync(videoFile, cancellationToken);
 
@@ -59,7 +49,11 @@ public class DownloadVideoCommand(
                 mediaInfo.Width = null;
                 mediaInfo.Height = null;
             }
-            mediaInfo.ThumbnailContentBytes = await File.ReadAllBytesAsync(thumbnailPath, cancellationToken);
+            mediaInfo.ThumbnailData = new MediaData
+            {
+                MediaType = MediaType.Image,
+                MediaContentBytes = await File.ReadAllBytesAsync(thumbnailPath, cancellationToken)
+            };
             
             File.Delete(tempVideoPath);
             File.Delete(thumbnailPath);

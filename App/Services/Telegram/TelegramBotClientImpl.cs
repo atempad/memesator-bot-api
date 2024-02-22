@@ -36,11 +36,11 @@ public class TelegramBotClientImpl : IBotClient
     
     public async Task SendVideoAsync(string[] receiversId, MediaInfo mediaInfo, CancellationToken cancellationToken = default)
     {
-        if (mediaInfo.MediaType != MediaType.Video) throw new AggregateException();
-        using var videoStream = new MemoryStream(mediaInfo.MediaContentBytes);
+        if (mediaInfo.Data.MediaType != MediaType.Video) throw new AggregateException();
+        using var videoStream = new MemoryStream(mediaInfo.Data.MediaContentBytes);
         InputFile videoInputFile = InputFile.FromStream(videoStream);
         InputFileId? videoInputFileId = null;
-        using var thumbnailStream = new MemoryStream(mediaInfo.ThumbnailContentBytes);
+        using var thumbnailStream = new MemoryStream(mediaInfo.ThumbnailData.MediaContentBytes);
         InputFile thumbrainFile = InputFile.FromStream(thumbnailStream);
         foreach (var receiverId in receiversId)
         {

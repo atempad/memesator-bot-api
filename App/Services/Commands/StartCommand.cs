@@ -5,7 +5,7 @@ using App.Services.Permissions;
 namespace App.Services.Commands;
 
 public class StartCommand(
-    IUserRepository userRepository) : IAsyncCommand
+    IUserRepository userRepository) : IAsyncCommand<bool>
 {
     private string userId = string.Empty;
     private string userChatId = string.Empty;
@@ -17,7 +17,7 @@ public class StartCommand(
         return this;
     }
     
-    public async Task InvokeAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> InvokeAsync(CancellationToken cancellationToken = default)
     {
         var allUsers = await userRepository.GetAllEntitiesAsync(cancellationToken: cancellationToken);
         var newUser = new ServiceUser
@@ -27,5 +27,6 @@ public class StartCommand(
             Role = allUsers.Any() ? Role.User : Role.Admin
         };
         await userRepository.AddEntityAsync(newUser, cancellationToken);
+        return true;
     }
 }

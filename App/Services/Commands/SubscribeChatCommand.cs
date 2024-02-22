@@ -6,7 +6,7 @@ namespace App.Services.Commands;
 
 public class SubscribeChatCommand(
     IUserRepository userRepository,
-    ISubscriptionRepository subscriptionRepository) : IAsyncCommand
+    ISubscriptionRepository subscriptionRepository) : IAsyncCommand<Subscription>
 {
     private string subscriberId = string.Empty;
     private string broadcasterId = string.Empty;
@@ -18,7 +18,7 @@ public class SubscribeChatCommand(
         return this;
     }
     
-    public async Task InvokeAsync(CancellationToken cancellationToken = default)
+    public async Task<Subscription> InvokeAsync(CancellationToken cancellationToken = default)
     {
         var subscriberUser = await userRepository.GetEntityOrDefaultAsync(subscriberId, cancellationToken: cancellationToken);
         if (subscriberUser == null)
@@ -39,5 +39,6 @@ public class SubscribeChatCommand(
             BroadcasterUserId = broadcasterUser.Id,
         };
         await subscriptionRepository.AddEntityAsync(subscription, cancellationToken);
+        return subscription;
     }
 }

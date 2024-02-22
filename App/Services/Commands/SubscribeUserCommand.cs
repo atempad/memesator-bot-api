@@ -5,7 +5,7 @@ namespace App.Services.Commands;
 
 public class SubscribeUserCommand(
     IUserRepository userRepository,
-    ISubscriptionRepository subscriptionRepository) : IAsyncCommand
+    ISubscriptionRepository subscriptionRepository) : IAsyncCommand<Subscription>
 {
     private string subscriberId = string.Empty;
     private string broadcasterId = string.Empty;
@@ -17,7 +17,7 @@ public class SubscribeUserCommand(
         return this;
     }
     
-    public async Task InvokeAsync(CancellationToken cancellationToken = default)
+    public async Task<Subscription> InvokeAsync(CancellationToken cancellationToken = default)
     {
         var subscriberUser = await userRepository.GetEntityAsync(subscriberId, cancellationToken);
         var broadcasterUser = await userRepository.GetEntityAsync(broadcasterId, cancellationToken);
@@ -28,5 +28,6 @@ public class SubscribeUserCommand(
             BroadcasterUserId = broadcasterUser.Id,
         };
         await subscriptionRepository.AddEntityAsync(subscription, cancellationToken);
+        return subscription;
     }
 }

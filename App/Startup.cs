@@ -3,8 +3,8 @@ using App.Middlewares;
 using App.Repositories;
 using App.Services;
 using App.Services.CommandHandlers.Providers;
-using App.Services.CommandResolvers;
 using App.Services.Commands;
+using App.Services.Operations;
 using App.Services.Permissions;
 using App.Services.Telegram;
 using App.Settings;
@@ -45,9 +45,9 @@ public class Startup(IConfiguration configuration)
         services.AddScoped<SubscribeChatCommand>();
         services.AddScoped<PostMediaCommand>();
         
-        services.AddScoped<IMediaScraperCommandResolver, MediaScraperCommandResolver>();
-        services.AddScoped<InstagramReelsScraperCommand>();
-        services.AddScoped<DownloadVideoCommand>();
+        services.AddScoped<IScrapeMediaOperation, ScrapeMediaOperation>();
+        services.AddScoped<DownloadInstagramReelsOperation>();
+        services.AddScoped<GetVideoMetaAndThumbnailOperation>();
 
         services.AddControllers().AddNewtonsoftJson(options =>
         {

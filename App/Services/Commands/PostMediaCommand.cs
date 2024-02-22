@@ -1,14 +1,14 @@
+using App.Models.API;
 using App.Repositories;
-using App.Services.CommandResolvers;
+using App.Services.Operations;
 
 namespace App.Services.Commands;
 
 public class PostMediaCommand(
     IBotClient botClient,
-    IMediaScraperCommandResolver mediaScraperCommandResolver,
-    DownloadVideoCommand downloadVideoCommand,
+    IScrapeMediaOperation scrapeMediaOperation,
     ISubscriptionRepository subscriptionRepository,
-    IUserRepository userRepository) : IAsyncCommand
+    IUserRepository userRepository) : IAsyncCommand<MediaInfo>
 {
     private string invokerUserId = string.Empty;
     private string urlString = string.Empty;
@@ -20,19 +20,19 @@ public class PostMediaCommand(
         return this;
     }
     
-    public async Task InvokeAsync(CancellationToken cancellationToken = default)
+    public async Task<MediaInfo> InvokeAsync(CancellationToken cancellationToken = default)
     {
-        var mediaScraperCommand = mediaScraperCommandResolver.Resolve(urlString);
-        if (mediaScraperCommand == null)
+        var mediaInfo = await scrapeMediaOperation.Setup(urlString).InvokeAsync(cancellationToken);
+        if (!mediaInfo.HasValue)
         {
-            return;
+            throw new Exception();
         }
-        var mediaUrlString = await mediaScraperCommand.InvokeAsync(cancellationToken);
-        var mediaInfo = await downloadVideoCommand.Setup(mediaUrlString).InvokeAsync(cancellationToken);
+        var userSubscriptions = await subscriptionRepository
+            .GetUserSubscriptionsAsync(invokerUserId, cancellationToken: cancellationToken);
+        var subscribers = await userRepository
+            .GetEntitiesAsync(userSubscriptions.Select(s => s.SubscriberUserId), cancellationToken: cancellationToken);
         
-        var userSubscriptions = await subscriptionRepository.GetUserSubscriptionsAsync(invokerUserId, cancellationToken: cancellationToken);
-        var subscribers = await userRepository.GetEntitiesAsync(userSubscriptions.Select(s => s.SubscriberUserId), cancellationToken: cancellationToken);
-        
-        await botClient.SendVideoAsync(subscribers.Select(s => s.ChatId).ToArray(), mediaInfo, cancellationToken);
+        await botClient.SendVideoAsync(subscribers.Select(s => s.ChatId).ToArray(), mediaInfo.Value, cancellationToken);
+        return mediaInfo.Value;
     }
 }
