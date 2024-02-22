@@ -8,8 +8,6 @@ public static class Constants
     }
     public static class DB
     {
-        public const string Id = "MemesatorDB";
-
         public static class Containers
         {
             public const string Users = "Users";

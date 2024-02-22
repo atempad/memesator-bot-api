@@ -1,11 +1,15 @@
 using App.Models.DB;
+using App.Settings;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Cosmos.Linq;
+using Microsoft.Extensions.Options;
 
 namespace App.Repositories;
 
-public class SubscriptionRepository(CosmosClient cosmosClient) 
-    : CosmosContainerRepository<Subscription>(cosmosClient, Constants.DB.Id, Constants.DB.Containers.Subscriptions), 
+public class SubscriptionRepository(
+    CosmosClient cosmosClient,
+    IOptions<DbSettings> dbSettings) 
+    : CosmosContainerRepository<Subscription>(cosmosClient, dbSettings.Value.DatabaseId, Constants.DB.Containers.Subscriptions), 
         ISubscriptionRepository
 {
     public async Task<IEnumerable<Subscription>> GetUserSubscriptionsAsync(string userId, CancellationToken cancellationToken = default)
