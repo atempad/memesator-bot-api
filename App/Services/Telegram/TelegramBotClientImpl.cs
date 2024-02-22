@@ -9,27 +9,29 @@ namespace App.Services.Telegram;
 
 public class TelegramBotClientImpl : IBotClient
 {
-    private readonly TelegramBotClient _telegramBotClient;
+    private readonly TelegramBotClient telegramBotClient;
+    private readonly IHostEnvironment environment;
 
-    public TelegramBotClientImpl(IOptions<TelegramBotSettings> telegramBotOptions, HttpClient? httpClient = default)
+    public TelegramBotClientImpl(
+        IOptions<TelegramBotSettings> telegramBotOptions,
+        IHostEnvironment environment,
+        HttpClient? httpClient = default)
     {
         TelegramBotClientOptions options = new(telegramBotOptions.Value.ApiToken);
-        _telegramBotClient = new TelegramBotClient(options, httpClient);
+        telegramBotClient = new TelegramBotClient(options, httpClient);
+        this.environment = environment;
     }
     
     public async Task SendTextMessageAsync(string receiverId, string text, CancellationToken cancellationToken = default)
     {
-        await _telegramBotClient.SendTextMessageAsync(receiverId, text,
+        await telegramBotClient.SendTextMessageAsync(receiverId, text,
             disableNotification: true,
             cancellationToken: cancellationToken);
     }
     
-    public async Task SendVideoAsync(string receiverId, byte[] buffer, CancellationToken cancellationToken = default)
-    {
-        using var stream = new MemoryStream(buffer);
-        await _telegramBotClient.SendVideoAsync(receiverId, InputFile.FromStream(stream),
-            disableNotification: true,
-            cancellationToken: cancellationToken);
+    public async Task SendVideoAsync(string receiverId, MediaInfo mediaInfo, CancellationToken cancellationToken = default)
+    { 
+        await SendVideoAsync([receiverId], mediaInfo, cancellationToken);
     }
     
     public async Task SendVideoAsync(string[] receiversId, MediaInfo mediaInfo, CancellationToken cancellationToken = default)
@@ -42,7 +44,7 @@ public class TelegramBotClientImpl : IBotClient
         InputFile thumbrainFile = InputFile.FromStream(thumbnailStream);
         foreach (var receiverId in receiversId)
         {
-            var message = await _telegramBotClient.SendVideoAsync(receiverId, 
+            var message = await telegramBotClient.SendVideoAsync(receiverId, 
                 video: videoInputFileId ?? videoInputFile,
                 thumbnail: thumbrainFile,
                 width: mediaInfo.Width,
@@ -59,9 +61,9 @@ public class TelegramBotClientImpl : IBotClient
 
     public async Task SetWebhookAsync(string url, string secretToken, CancellationToken cancellationToken = default)
     {
-        await _telegramBotClient.SetWebhookAsync(
+        await telegramBotClient.SetWebhookAsync(
             url: url,
-            dropPendingUpdates: true,
+            dropPendingUpdates: environment.IsDevelopment(),
             allowedUpdates: [UpdateType.Message],
             secretToken: secretToken,
             cancellationToken: cancellationToken);
@@ -69,7 +71,7 @@ public class TelegramBotClientImpl : IBotClient
 
     public async Task<string> GetWebhookAsync(CancellationToken cancellationToken = default)
     {
-        var webhookInfo = await _telegramBotClient.GetWebhookInfoAsync(cancellationToken);
+        var webhookInfo = await telegramBotClient.GetWebhookInfoAsync(cancellationToken);
         return webhookInfo.Url;
     }
 }
