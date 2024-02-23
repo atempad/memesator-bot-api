@@ -5,6 +5,7 @@ public static class Constants
     public static class RequestHeaders
     {
         public const string UserAgent = "User-Agent";
+        public const string Cookie = "Cookie";
         public const string TelegramBotApiSecretToken = "X-Telegram-Bot-Api-Secret-Token";
     }
     public static class DB

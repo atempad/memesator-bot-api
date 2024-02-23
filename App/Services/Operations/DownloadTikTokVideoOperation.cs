@@ -5,7 +5,7 @@ using PuppeteerSharp;
 
 namespace App.Services.Operations;
 
-public class DownloadInstagramVideoOperation(
+public class DownloadTikTokVideoOperation(
     IHostEnvironment environment) : DownloadMediaOperation
 {
     public override async Task<MediaData> InvokeAsync(CancellationToken cancellationToken = default)
@@ -26,30 +26,31 @@ public class DownloadInstagramVideoOperation(
         var waitForSelectorOptions = new WaitForSelectorOptions { Timeout = 10000 };
         await page.WaitForSelectorAsync("video", waitForSelectorOptions);
         
-        var htmlDoc = new HtmlDocument();
+        var cookies = await page.GetCookiesAsync();
         var htmlContent = await page.GetContentAsync();
-        htmlDoc.LoadHtml(htmlContent);
         
+        var htmlDoc = new HtmlDocument();
+        htmlDoc.LoadHtml(htmlContent);
         var videoNode = htmlDoc.DocumentNode.SelectSingleNode("//video");
         var encodedSrc = videoNode?.GetAttributeValue("src", string.Empty);
         var decodedSrc = WebUtility.HtmlDecode(encodedSrc);
 
-        if (string.IsNullOrWhiteSpace(decodedSrc))
-        {
-            throw new InvalidOperationException("Failed to get media URL");
-        }
+        using var httpClientHandler = new HttpClientHandler();
+        httpClientHandler.UseCookies = false;
+        using var httpClient = new HttpClient(httpClientHandler);
         
-        using var httpClient = new HttpClient();
-        var response = await httpClient.GetAsync(decodedSrc, HttpCompletionOption.ResponseHeadersRead,
-            cancellationToken);
-        response.EnsureSuccessStatusCode();
+        var videoContentRequest = new HttpRequestMessage(HttpMethod.Get, decodedSrc);
+        videoContentRequest.Headers.Referrer = new Uri("https://www.tiktok.com/");
+        videoContentRequest.Headers.Add(Constants.RequestHeaders.Cookie,
+            string.Join("; ", cookies.Select(p => p.Name + "=" + p.Value)));
         
-        var mediaContentBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var videoContentBytes = await DownloadContentByChunksAsync(httpClient, videoContentRequest, 
+            Constants.Video.ChunkSize, cancellationToken);
         
         return new MediaData
         {
-            MediaType = MediaType.Video,
-            MediaContentBytes = mediaContentBytes
+            MediaType = MediaType.Video, 
+            MediaContentBytes = videoContentBytes
         };
     }
 }

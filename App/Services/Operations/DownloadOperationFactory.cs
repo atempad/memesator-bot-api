@@ -7,15 +7,23 @@ public class DownloadOperationFactory(
     IHostEnvironment environment,
     IOptions<AppSettings> appSettings) : IDownloadOperationFactory
 {
+    private delegate DownloadMediaOperation DownloadMediaOperationCreator();
+    
+    private readonly Dictionary<string, DownloadMediaOperationCreator> operationCreators = new()
+    {
+        { "instagram.com/reel/", () => new DownloadInstagramVideoOperation(environment) },
+        { "youtube.com/", () => new DownloadYoutubeVideoOperation(appSettings) },
+        { "tiktok.com/", () => new DownloadTikTokVideoOperation(environment) }
+    };
+    
     public DownloadMediaOperation Create(string mediaUrl)
     {
-        if (mediaUrl.Contains("instagram.com/reel/"))
+        foreach (var (pattern, downloadMediaOperationCreator) in operationCreators)
         {
-            return new DownloadInstagramVideoOperation(environment).Setup(mediaUrl);
-        }
-        if (mediaUrl.Contains("youtube.com/"))
-        {
-            return new DownloadYoutubeVideoOperation(appSettings).Setup(mediaUrl);;
+            if (mediaUrl.Contains(pattern))
+            {
+                return downloadMediaOperationCreator.Invoke().Setup(mediaUrl);
+            }
         }
         throw new ArgumentException("Unsupported media URL.", nameof(mediaUrl));
     }
