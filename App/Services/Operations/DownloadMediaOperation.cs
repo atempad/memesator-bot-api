@@ -1,9 +1,11 @@
 using App.Models.Services;
+using PuppeteerSharp;
 
 namespace App.Services.Operations;
 
 public abstract class DownloadMediaOperation : IAsyncOperation<MediaData>
-{ protected string urlString = string.Empty;
+{ 
+    protected string urlString = string.Empty;
     
     public virtual DownloadMediaOperation Setup(string urlString)
     {
@@ -12,6 +14,20 @@ public abstract class DownloadMediaOperation : IAsyncOperation<MediaData>
     }
 
     public abstract Task<MediaData> InvokeAsync(CancellationToken cancellationToken = default);
+    
+    protected static async Task<IBrowser> GetBrowser(bool isDevelopment = false)
+    {
+        if (isDevelopment)
+        {
+            await new BrowserFetcher().DownloadAsync();
+        }
+        var launchOptions = new LaunchOptions
+        {
+            Headless = true,
+            Args = isDevelopment ? [] : ["--no-sandbox"]
+        };
+        return await Puppeteer.LaunchAsync(launchOptions);
+    }
     
     protected static async Task<byte[]> DownloadContentByChunksAsync(HttpClient httpClient, HttpRequestMessage request,
         int chunkSize, CancellationToken cancellationToken = default)

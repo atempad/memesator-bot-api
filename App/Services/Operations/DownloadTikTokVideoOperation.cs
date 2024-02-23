@@ -10,17 +10,8 @@ public class DownloadTikTokVideoOperation(
 {
     public override async Task<MediaData> InvokeAsync(CancellationToken cancellationToken = default)
     {
-        if (environment.IsDevelopment())
-        {
-            await new BrowserFetcher().DownloadAsync();
-        }
-        var launchOptions = new LaunchOptions
-        {
-            Headless = true,
-            Args = ["--no-sandbox"]
-        };
-        await using var browser = await Puppeteer.LaunchAsync(launchOptions);
-        
+        await using var browser = await GetBrowser(environment.IsDevelopment());
+
         var page = await browser.NewPageAsync();
         await page.GoToAsync(urlString);
         var waitForSelectorOptions = new WaitForSelectorOptions { Timeout = 10000 };
