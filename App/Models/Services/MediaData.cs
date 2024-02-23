@@ -1,4 +1,4 @@
-namespace App.Models.API;
+namespace App.Models.Services;
 
 public class MediaData
 {

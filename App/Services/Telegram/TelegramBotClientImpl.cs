@@ -1,4 +1,4 @@
-using App.Models.API;
+using App.Models.Services;
 using App.Settings;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
@@ -29,29 +29,36 @@ public class TelegramBotClientImpl : IBotClient
             cancellationToken: cancellationToken);
     }
     
-    public async Task SendVideoAsync(string receiverId, MediaInfo mediaInfo, CancellationToken cancellationToken = default)
+    public async Task SendVideoAsync(string receiverId, Media media, CancellationToken cancellationToken = default)
     { 
-        await SendVideoAsync([receiverId], mediaInfo, cancellationToken);
+        await SendVideoAsync([receiverId], media, cancellationToken);
     }
     
-    public async Task SendVideoAsync(string[] receiversId, MediaInfo mediaInfo, CancellationToken cancellationToken = default)
+    public async Task SendVideoAsync(string[] receiversId, Media media, CancellationToken cancellationToken = default)
     {
-        if (mediaInfo.Data.MediaType != MediaType.Video) throw new AggregateException();
-        using var videoStream = new MemoryStream(mediaInfo.Data.MediaContentBytes);
+        if (media.Data.MediaType != MediaType.Video)
+        {
+            throw new Exception();
+        }
+        
+        using var videoStream = new MemoryStream(media.Data.MediaContentBytes);
         InputFile videoInputFile = InputFile.FromStream(videoStream);
         InputFileId? videoInputFileId = null;
-        using var thumbnailStream = new MemoryStream(mediaInfo.ThumbnailData.MediaContentBytes);
+        
+        using var thumbnailStream = new MemoryStream(media.ThumbnailData.MediaContentBytes);
         InputFile thumbrainFile = InputFile.FromStream(thumbnailStream);
+        
         foreach (var receiverId in receiversId)
         {
             var message = await telegramBotClient.SendVideoAsync(receiverId, 
                 video: videoInputFileId ?? videoInputFile,
                 thumbnail: thumbrainFile,
-                width: mediaInfo.Width,
-                height: mediaInfo.Height,
-                duration: (int)mediaInfo.Duration,
+                width: media.Width,
+                height: media.Height,
+                duration: (int)media.Duration,
                 disableNotification: true,
                 cancellationToken: cancellationToken);
+            
             if (message.Video?.FileId != null && videoInputFileId == null)
             {
                 videoInputFileId = InputFile.FromFileId(message.Video.FileId);

@@ -1,52 +1,30 @@
-using App.Models.API;
+using App.Models.Services;
 
 namespace App.Services.Operations;
 
 public class ScrapeMediaOperation(
-    IServiceProvider serviceProvider) : IScrapeMediaOperation
+    IDownloadOperationFactory downloadOperationFactory,
+    GetVideoMetaAndThumbnailOperation getVideoMetaAndThumbnailOperation) : IScrapeMediaOperation
 {
     private string mediaUrl = string.Empty;
 
-    private readonly Dictionary<string, Type> downloaderMap = new()
-    {
-        { "instagram.com/reel/", typeof(DownloadInstagramVideoOperation) },
-        { "youtube.com/", typeof(DownloadYoutubeVideoOperation) },
-    };
-    
     public IScrapeMediaOperation Setup(string mediaUrl)
     {
         this.mediaUrl = mediaUrl;
         return this;
     }
 
-    public async Task<MediaInfo?> InvokeAsync(CancellationToken cancellationToken = default)
+    public async Task<Media> InvokeAsync(CancellationToken cancellationToken = default)
     {
-        var scope = serviceProvider.CreateScope();
-        MediaData? mediaData = null;
-        foreach (var (pattern, downloaderType) in downloaderMap)
+        MediaData mediaData = await downloadOperationFactory
+            .Create(mediaUrl)
+            .InvokeAsync(cancellationToken);
+        
+        if (mediaData.MediaType == MediaType.Video)
         {
-            if (mediaUrl.Contains(pattern))
-            {
-                mediaData = await DownloadMedia(scope.ServiceProvider, downloaderType, mediaUrl, cancellationToken);
-                break;
-            }
-        }
-        if (mediaData?.MediaType == MediaType.Video)
-        {
-            return await scope.ServiceProvider
-                .GetRequiredService<GetVideoMetaAndThumbnailOperation>()
-                .Setup(mediaData)
+            return await getVideoMetaAndThumbnailOperation.Setup(mediaData)
                 .InvokeAsync(cancellationToken);
         }
-        return null;
-    }
-
-    private static async Task<MediaData> DownloadMedia(IServiceProvider serviceProvider,
-        Type downloaderType,
-        string mediaUrl, 
-        CancellationToken cancellationToken = default)
-    {
-        var downloader = serviceProvider.GetRequiredService(downloaderType) as DownloadMediaOperation;
-        return await downloader!.Setup(mediaUrl).InvokeAsync(cancellationToken);
+        throw new NotSupportedException();
     }
 }

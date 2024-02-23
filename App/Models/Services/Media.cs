@@ -1,6 +1,6 @@
-namespace App.Models.API;
+namespace App.Models.Services;
 
-public struct MediaInfo
+public struct Media
 {
     public MediaData Data;
     public MediaData ThumbnailData;

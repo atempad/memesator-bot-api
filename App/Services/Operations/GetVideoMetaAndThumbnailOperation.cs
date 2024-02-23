@@ -1,4 +1,4 @@
-using App.Models.API;
+using App.Models.Services;
 using App.Settings;
 using FFmpeg.NET;
 using FFmpeg.NET.Events;
@@ -8,17 +8,17 @@ namespace App.Services.Operations;
 
 public class GetVideoMetaAndThumbnailOperation(
     IHostEnvironment environment,
-    IOptions<AppSettings> appSettings) : IAsyncOperation<MediaInfo>
+    IOptions<AppSettings> appSettings) : IAsyncOperation<Media>
 {
-    private MediaInfo mediaInfo;
+    private Media _media;
 
     public GetVideoMetaAndThumbnailOperation Setup(MediaData mediaData)
     {
-        mediaInfo.Data = mediaData;
+        _media.Data = mediaData;
         return this;
     }
     
-    public async Task<MediaInfo> InvokeAsync(CancellationToken cancellationToken = default)
+    public async Task<Media> InvokeAsync(CancellationToken cancellationToken = default)
     {
         InputFile? videoFile = null;
         string tempVideoPath = string.Empty;
@@ -29,7 +29,7 @@ public class GetVideoMetaAndThumbnailOperation(
             var ffmpeg = new Engine(appSettings.Value.FFMpegPath);
             ffmpeg.Data += OnData;
             tempVideoPath = Path.GetTempFileName();
-            await File.WriteAllBytesAsync(tempVideoPath, mediaInfo.Data.MediaContentBytes, cancellationToken);
+            await File.WriteAllBytesAsync(tempVideoPath, _media.Data.MediaContentBytes, cancellationToken);
             videoFile = new InputFile(tempVideoPath);
             var metaData = await ffmpeg.GetMetaDataAsync(videoFile, cancellationToken);
 
@@ -37,19 +37,19 @@ public class GetVideoMetaAndThumbnailOperation(
             thumbnailFile = new OutputFile(thumbnailPath);
             await ffmpeg.GetThumbnailAsync(videoFile, thumbnailFile, cancellationToken);
             
-            mediaInfo.Duration = metaData.Duration.TotalSeconds;
+            _media.Duration = metaData.Duration.TotalSeconds;
             var frameSize = metaData.VideoData?.FrameSize.Split('x');
             if (frameSize is { Length: 2 })
             {
-                mediaInfo.Width = Convert.ToInt32(frameSize[0]);
-                mediaInfo.Height = Convert.ToInt32(frameSize[1]);
+                _media.Width = Convert.ToInt32(frameSize[0]);
+                _media.Height = Convert.ToInt32(frameSize[1]);
             }
             else
             {
-                mediaInfo.Width = null;
-                mediaInfo.Height = null;
+                _media.Width = null;
+                _media.Height = null;
             }
-            mediaInfo.ThumbnailData = new MediaData
+            _media.ThumbnailData = new MediaData
             {
                 MediaType = MediaType.Image,
                 MediaContentBytes = await File.ReadAllBytesAsync(thumbnailPath, cancellationToken)
@@ -64,7 +64,7 @@ public class GetVideoMetaAndThumbnailOperation(
             if (thumbnailFile != null) File.Delete(thumbnailPath);
             throw;
         }
-        return mediaInfo;
+        return _media;
     }
 
     private void OnData(object? sender, ConversionDataEventArgs e)

@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
-using App.Models.API;
+using App.Models.Services;
+using App.Models.Services.Youtube;
 using App.Settings;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -9,27 +10,6 @@ namespace App.Services.Operations;
 public class DownloadYoutubeVideoOperation(
     IOptions<AppSettings> appSettings) : DownloadMediaOperation
 {
-    public class MetaData
-    {
-        [JsonProperty("streamingData")]
-        public required StreamingData StreamingData { get; set; }
-    }
-
-    public class StreamingData
-    {
-        [JsonProperty("formats")]
-        public required List<Format> Formats { get; set; }
-    }
-
-    public class Format
-    {
-        [JsonProperty("url")]
-        public required string Url { get; set; }
-        
-        [JsonProperty("contentLength")]
-        public required string ContentLength { get; set; }
-    }
-
     public override async Task<MediaData> InvokeAsync(CancellationToken cancellationToken = default)
     {
         using var httpClient = new HttpClient();
@@ -40,19 +20,19 @@ public class DownloadYoutubeVideoOperation(
         using var metaDataResponse = await httpClient.SendAsync(metaDataRequest, cancellationToken);
         metaDataResponse.EnsureSuccessStatusCode();
         
-        string metaDataContent = await metaDataResponse.Content.ReadAsStringAsync(cancellationToken);
-        MetaData? metaData = JsonConvert.DeserializeObject<MetaData>(metaDataContent);
-        Format? streamMetaData = metaData?.StreamingData.Formats.LastOrDefault();
-        if (streamMetaData == null || string.IsNullOrWhiteSpace(streamMetaData.Url))
+        string metaDataJsonString = await metaDataResponse.Content.ReadAsStringAsync(cancellationToken);
+        VideoMetaData? metaData = JsonConvert.DeserializeObject<VideoMetaData>(metaDataJsonString);
+        VideoStreamingFormat? streamingFormat = metaData?.StreamingData.Formats.LastOrDefault();
+        if (streamingFormat == null || string.IsNullOrWhiteSpace(streamingFormat.Url))
         {
             throw new InvalidOperationException("Failed to get media URL");
         }
-        string streamUrl = streamMetaData.Url;
+        string streamUrl = streamingFormat.Url;
         
         const int chunkSize = Constants.Video.ChunkSize;
         int currentStart = 0;
         byte[] videoContentBytes = [];
-        await using (var videoContentStream = new MemoryStream())
+        using (var videoContentStream = new MemoryStream())
         {
             bool endOfFile = false;
             while (!endOfFile)
@@ -119,7 +99,7 @@ public class DownloadYoutubeVideoOperation(
     
     public static string GetVideoIdFromUrl(string url)
     {
-        string pattern = @"(?:https?:\/\/)?(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)([^&\/\?\n]+)";
+        const string pattern = @"(?:https?:\/\/)?(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)([^&\/\?\n]+)";
         Match match = Regex.Match(url, pattern);
         return match.Success ? match.Groups[1].Value : string.Empty;
     }

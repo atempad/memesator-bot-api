@@ -1,8 +1,8 @@
-using App.Models.API;
+using App.Models.Services;
 
 namespace App.Services.Operations;
 
-public interface IScrapeMediaOperation : IAsyncOperation<MediaInfo?>
+public interface IScrapeMediaOperation : IAsyncOperation<Media>
 {
     IScrapeMediaOperation Setup(string mediaUrl);
 }

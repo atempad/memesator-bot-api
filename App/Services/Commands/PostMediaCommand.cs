@@ -1,4 +1,4 @@
-using App.Models.API;
+using App.Models.Services;
 using App.Repositories;
 using App.Services.Operations;
 
@@ -8,7 +8,7 @@ public class PostMediaCommand(
     IBotClient botClient,
     IScrapeMediaOperation scrapeMediaOperation,
     ISubscriptionRepository subscriptionRepository,
-    IUserRepository userRepository) : IAsyncCommand<MediaInfo>
+    IUserRepository userRepository) : IAsyncCommand<Media>
 {
     private string invokerUserId = string.Empty;
     private string urlString = string.Empty;
@@ -20,19 +20,14 @@ public class PostMediaCommand(
         return this;
     }
     
-    public async Task<MediaInfo> InvokeAsync(CancellationToken cancellationToken = default)
+    public async Task<Media> InvokeAsync(CancellationToken cancellationToken = default)
     {
-        var mediaInfo = await scrapeMediaOperation.Setup(urlString).InvokeAsync(cancellationToken);
-        if (!mediaInfo.HasValue)
-        {
-            throw new Exception();
-        }
-        var userSubscriptions = await subscriptionRepository
-            .GetUserSubscriptionsAsync(invokerUserId, cancellationToken: cancellationToken);
-        var subscribers = await userRepository
-            .GetEntitiesAsync(userSubscriptions.Select(s => s.SubscriberUserId), cancellationToken: cancellationToken);
-        
-        await botClient.SendVideoAsync(subscribers.Select(s => s.ChatId).ToArray(), mediaInfo.Value, cancellationToken);
-        return mediaInfo.Value;
+        var media = await scrapeMediaOperation.Setup(urlString).InvokeAsync(cancellationToken);
+        var userSubscriptions = await subscriptionRepository.GetUserSubscriptionsAsync(invokerUserId, cancellationToken: cancellationToken);
+        var userSubscriberIds = userSubscriptions.Select(s => s.SubscriberUserId);
+        var userSubscribers = await userRepository.GetEntitiesAsync(userSubscriberIds, cancellationToken: cancellationToken);
+        var userSubscriberChatIds = userSubscribers.Select(s => s.ChatId).ToArray();
+        await botClient.SendVideoAsync(userSubscriberChatIds, media, cancellationToken);
+        return media;
     }
 }

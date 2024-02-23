@@ -44,10 +44,9 @@ public class Startup(IConfiguration configuration)
         services.AddScoped<SubscribeUserCommand>();
         services.AddScoped<SubscribeChatCommand>();
         services.AddScoped<PostMediaCommand>();
-        
+
+        services.AddScoped<IDownloadOperationFactory, DownloadOperationFactory>();
         services.AddScoped<IScrapeMediaOperation, ScrapeMediaOperation>();
-        services.AddScoped<DownloadInstagramVideoOperation>();
-        services.AddScoped<DownloadYoutubeVideoOperation>();
         services.AddScoped<GetVideoMetaAndThumbnailOperation>();
 
         services.AddControllers().AddNewtonsoftJson(options =>
