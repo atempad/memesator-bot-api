@@ -25,6 +25,11 @@ public class DownloadTikTokVideoOperation(
         var videoNode = htmlDoc.DocumentNode.SelectSingleNode("//video");
         var encodedSrc = videoNode?.GetAttributeValue("src", string.Empty);
         var decodedSrc = WebUtility.HtmlDecode(encodedSrc);
+        
+        if (string.IsNullOrWhiteSpace(decodedSrc))
+        {
+            throw new InvalidOperationException("Failed to get media URL");
+        }
 
         using var httpClientHandler = new HttpClientHandler();
         httpClientHandler.UseCookies = false;
