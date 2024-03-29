@@ -45,7 +45,7 @@ public class Startup(IConfiguration configuration)
         services.AddScoped<SubscribeChatCommand>();
         services.AddScoped<PostMediaCommand>();
 
-        services.AddScoped<IDownloadOperationFactory, DownloadOperationFactory>();
+        services.AddScoped<IDownloadMediaOperationFactory, DownloadMediaOperationFactory>();
         services.AddScoped<IScrapeMediaOperation, ScrapeMediaOperation>();
         services.AddScoped<GetVideoMetaAndThumbnailOperation>();
 

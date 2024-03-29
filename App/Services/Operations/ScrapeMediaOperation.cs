@@ -3,7 +3,7 @@ using App.Models.Services;
 namespace App.Services.Operations;
 
 public class ScrapeMediaOperation(
-    IDownloadOperationFactory downloadOperationFactory,
+    IDownloadMediaOperationFactory downloadMediaOperationFactory,
     GetVideoMetaAndThumbnailOperation getVideoMetaAndThumbnailOperation) : IScrapeMediaOperation
 {
     private string mediaUrl = string.Empty;
@@ -16,7 +16,7 @@ public class ScrapeMediaOperation(
 
     public async Task<Media> InvokeAsync(CancellationToken cancellationToken = default)
     {
-        MediaData mediaData = await downloadOperationFactory
+        MediaData mediaData = await downloadMediaOperationFactory
             .Create(mediaUrl)
             .InvokeAsync(cancellationToken);
         

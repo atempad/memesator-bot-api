@@ -3,13 +3,11 @@ using Microsoft.Extensions.Options;
 
 namespace App.Services.Operations;
 
-public class DownloadOperationFactory(
+public class DownloadMediaOperationFactory(
     IHostEnvironment environment,
-    IOptions<AppSettings> appSettings) : IDownloadOperationFactory
+    IOptions<AppSettings> appSettings) : IDownloadMediaOperationFactory
 {
-    private delegate DownloadMediaOperation DownloadMediaOperationCreator();
-    
-    private readonly Dictionary<string, DownloadMediaOperationCreator> operationCreators = new()
+    private readonly Dictionary<string, Func<DownloadMediaOperation>> operationCreators = new()
     {
         { "instagram.com/reel/", () => new DownloadInstagramVideoOperation(environment) },
         { "youtube.com/", () => new DownloadYoutubeVideoOperation(appSettings) },

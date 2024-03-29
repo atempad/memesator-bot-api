@@ -1,6 +1,6 @@
 namespace App.Services.Operations;
 
-public interface IDownloadOperationFactory
+public interface IDownloadMediaOperationFactory
 {
     DownloadMediaOperation Create(string mediaUrl);
 }
