@@ -23,7 +23,7 @@ public abstract class DownloadMediaOperation : IAsyncOperation<MediaData>
         }
         var launchOptions = new LaunchOptions
         {
-            Headless = true,
+            Headless = !isDevelopment,
             Args = isDevelopment ? [] : ["--no-sandbox"]
         };
         return await Puppeteer.LaunchAsync(launchOptions);
