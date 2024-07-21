@@ -12,7 +12,7 @@ public enum Permission : long
     AddSubscriptions = 1L << 11,
     DeleteSubscriptions = 1L << 12,
     ReadSubscriptions = 1L << 13,
-    AdmineSubscriptions = Subscribe | AddSubscriptions | DeleteSubscriptions | ReadSubscriptions,
+    AdminSubscriptions = Subscribe | AddSubscriptions | DeleteSubscriptions | ReadSubscriptions,
     
     AddUsers = 1L << 20,
     DeleteUsers = 1L << 21,
@@ -25,5 +25,5 @@ public enum Permission : long
     ReadPermissions = 1L << 32,
     AdminPermissions = GrantPermissions | RevokePermissions | ReadPermissions,
     
-    AdminAll = AdminPosts | AdmineSubscriptions | AdminUsers | AdminPermissions,
+    AdminAll = AdminPosts | AdminSubscriptions | AdminUsers | AdminPermissions,
 }
