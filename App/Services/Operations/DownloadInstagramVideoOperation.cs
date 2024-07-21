@@ -11,9 +11,13 @@ public class DownloadInstagramVideoOperation(
     public override async Task<MediaData> InvokeAsync(CancellationToken cancellationToken = default)
     {
         await using var browser = await GetBrowser(environment.IsDevelopment());
-        
         var page = await browser.NewPageAsync();
-        await page.GoToAsync(urlString);
+        var deviceOptions = Puppeteer.Devices.GetValueOrDefault(PuppeteerSharp.Mobile.DeviceDescriptorName.IPhone5);
+        await page.EmulateAsync(deviceOptions);
+        await page.GoToAsync(urlString, new NavigationOptions
+        {
+            WaitUntil = [WaitUntilNavigation.Networkidle0] // Wait until there are no more network requests for at least 500ms
+        });
         var waitForSelectorOptions = new WaitForSelectorOptions { Timeout = 10000 };
         await page.WaitForSelectorAsync("video", waitForSelectorOptions);
         
