@@ -8,25 +8,13 @@ RUN apt-get update && apt-get install -y \
     libappindicator3-1 libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libxfixes3 \
     libdbus-1-3 libexpat1 libgcc1 libnspr4 libgbm1 libpangocairo-1.0-0 libstdc++6 \
     libx11-6 libx11-xcb1 libxcb1 libxext6 libxrandr2 libxrender1 gconf-service \
-    ca-certificates fonts-liberation libappindicator1 lsb-release xdg-utils curl wget && \
+    ca-certificates fonts-liberation libappindicator1 lsb-release xdg-utils curl wget \
+    firefox && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    if [ "$(uname -m)" = "x86_64" ]; then \
-      LATEST_CHROME_RELEASE=$(curl -s https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json | jq '.channels.Stable') && \
-      LATEST_CHROME_URL=$(echo "$LATEST_CHROME_RELEASE" | jq -r '.downloads.chrome[] | select(.platform == "linux64") | .url') && \
-      wget -N "$LATEST_CHROME_URL" -P /tmp/ && \
-      unzip /tmp/chrome-linux64.zip -d /opt/ && \
-      mv /opt/chrome-linux64 /opt/chrome && \
-      chmod +x /opt/chrome && \
-      rm /tmp/chrome-linux64.zip && \
-      export PUPPETEER_EXECUTABLE_PATH=/opt/chrome/chrome ; \
-    elif [ "$(uname -m)" = "aarch64" ]; then \
-      apt-get update && apt-get install -y chromium-browser && \
-      export PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser ; \
-    fi
+    rm -rf /var/lib/apt/lists/*
 
 ENV AppSettings__FFmpegPath=/usr/bin/ffmpeg
-ENV PUPPETEER_EXECUTABLE_PATH=${PUPPETEER_EXECUTABLE_PATH}
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/firefox
 
 USER $APP_UID
 WORKDIR /app
