@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     libdbus-1-3 libexpat1 libgcc1 libnspr4 libgbm1 libpangocairo-1.0-0 libstdc++6 \
     libx11-6 libx11-xcb1 libxcb1 libxext6 libxrandr2 libxrender1 gconf-service \
     ca-certificates fonts-liberation libappindicator1 lsb-release xdg-utils curl wget \
-    firefox-esr && \
+    firefox-esr pciutils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
