@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 ENV AppSettings__FFmpegPath=/usr/bin/ffmpeg
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 USER $APP_UID
 WORKDIR /app
