@@ -1,4 +1,6 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+﻿# BASE
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+
 EXPOSE 80
 
 RUN apt-get update && apt-get install -y \
@@ -20,20 +22,33 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 USER $APP_UID
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# BUILD
+FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim-amd64 AS build
+
 ARG BUILD_CONFIGURATION=Release
+ARG TARGETARCH
+ARG TARGETOS
+
+RUN arch=$TARGETARCH \
+    && if [ "$arch" = "amd64" ]; then arch="x64"; fi \
+    && echo $TARGETOS-$arch > /tmp/rid
+
 WORKDIR /src
+
 COPY ["memesator-bot-api.csproj", "./"]
-RUN dotnet restore "memesator-bot-api.csproj"
+RUN dotnet restore "memesator-bot-api.csproj" -r $(cat /tmp/rid)
 COPY . .
 WORKDIR "/src/"
-RUN dotnet build "memesator-bot-api.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "memesator-bot-api.csproj" -c Release -o /app/build -r $(cat /tmp/rid) --self-contained false --no-restore
 
+# PUBLISH
 FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "memesator-bot-api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
+RUN dotnet publish "memesator-bot-api.csproj" -c Release -o /app/publish -r $(cat /tmp/rid) --self-contained false --no-restore
+
+# FINAL
 FROM base AS final
+
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "memesator-bot-api.dll"]
