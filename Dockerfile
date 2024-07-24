@@ -11,13 +11,19 @@ RUN apt-get update && apt-get install -y \
     ca-certificates fonts-liberation libappindicator1 lsb-release xdg-utils curl wget && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    LATEST_CHROME_RELEASE=$(curl -s https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json | jq '.channels.Stable') && \
-    LATEST_CHROME_URL=$(echo "$LATEST_CHROME_RELEASE" | jq -r '.downloads.chrome[] | select(.platform == "linux64") | .url') && \
-    wget -N "$LATEST_CHROME_URL" -P /tmp/ && \
-    unzip /tmp/chrome-linux64.zip -d /opt/ && \
-    mv /opt/chrome-linux64 /opt/chrome && \
-    chmod +x /opt/chrome && \
-    rm /tmp/chrome-linux64.zip
+    if [ "$(uname -m)" = "x86_64" ]; then \
+      LATEST_CHROME_RELEASE=$(curl -s https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json | jq '.channels.Stable') && \
+      LATEST_CHROME_URL=$(echo "$LATEST_CHROME_RELEASE" | jq -r '.downloads.chrome[] | select(.platform == "linux64") | .url') && \
+      wget -N "$LATEST_CHROME_URL" -P /tmp/ && \
+      unzip /tmp/chrome-linux64.zip -d /opt/ && \
+      mv /opt/chrome-linux64 /opt/chrome && \
+      chmod +x /opt/chrome && \
+      rm /tmp/chrome-linux64.zip ; \
+    elif [ "$(uname -m)" = "aarch64" ]; then \
+      wget -N https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -P /tmp/ && \
+      apt-get update && apt-get install -y /tmp/google-chrome-stable_current_amd64.deb && \
+      rm /tmp/google-chrome-stable_current_amd64.deb ; \
+    fi
 
 ENV AppSettings__FFmpegPath=/usr/bin/ffmpeg
 ENV PUPPETEER_EXECUTABLE_PATH=/opt/chrome/chrome
