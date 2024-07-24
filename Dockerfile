@@ -2,6 +2,7 @@
 EXPOSE 80
 
 RUN apt-get update && apt-get install -y \
+    apt-utils \
     ffmpeg unzip xvfb libxi6 libgconf-2-4 jq libjq1 libonig5 libxkbcommon0 libxss1 \
     libglib2.0-0 libnss3 libfontconfig1 libatk-bridge2.0-0 libatspi2.0-0 libgtk-3-0 \
     libpango-1.0-0 libgdk-pixbuf2.0-0 libxcomposite1 libxcursor1 libxdamage1 libxtst6 \
