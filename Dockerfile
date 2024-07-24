@@ -18,15 +18,15 @@ RUN apt-get update && apt-get install -y \
       unzip /tmp/chrome-linux64.zip -d /opt/ && \
       mv /opt/chrome-linux64 /opt/chrome && \
       chmod +x /opt/chrome && \
-      rm /tmp/chrome-linux64.zip ; \
+      rm /tmp/chrome-linux64.zip && \
+      export PUPPETEER_EXECUTABLE_PATH=/opt/chrome/chrome ; \
     elif [ "$(uname -m)" = "aarch64" ]; then \
-      wget -N https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -P /tmp/ && \
-      apt-get update && apt-get install -y /tmp/google-chrome-stable_current_amd64.deb && \
-      rm /tmp/google-chrome-stable_current_amd64.deb ; \
+      apt-get update && apt-get install -y chromium-browser && \
+      export PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser ; \
     fi
 
 ENV AppSettings__FFmpegPath=/usr/bin/ffmpeg
-ENV PUPPETEER_EXECUTABLE_PATH=/opt/chrome/chrome
+ENV PUPPETEER_EXECUTABLE_PATH=${PUPPETEER_EXECUTABLE_PATH}
 
 USER $APP_UID
 WORKDIR /app
