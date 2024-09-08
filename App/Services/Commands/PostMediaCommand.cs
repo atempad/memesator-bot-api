@@ -6,16 +6,14 @@ namespace App.Services.Commands;
 
 public class PostMediaCommand(
     IBotClient botClient,
-    IScrapeMediaOperation scrapeMediaOperation,
-    ISubscriptionRepository subscriptionRepository,
-    IUserRepository userRepository) : IAsyncCommand<Media>
+    IScrapeMediaOperation scrapeMediaOperation) : IAsyncCommand<Media>
 {
-    private string invokerUserId = string.Empty;
+    private string invokerChatId = string.Empty;
     private string urlString = string.Empty;
     
-    public PostMediaCommand Setup(string invokerUserId, string urlString)
+    public PostMediaCommand Setup(string invokerChatId, string urlString)
     {
-        this.invokerUserId = invokerUserId;
+        this.invokerChatId = invokerChatId;
         this.urlString = urlString;
         return this;
     }
@@ -23,11 +21,7 @@ public class PostMediaCommand(
     public async Task<Media> InvokeAsync(CancellationToken cancellationToken = default)
     {
         var media = await scrapeMediaOperation.Setup(urlString).InvokeAsync(cancellationToken);
-        var userSubscriptions = await subscriptionRepository.GetUserSubscriptionsAsync(invokerUserId, cancellationToken: cancellationToken);
-        var userSubscriberIds = userSubscriptions.Select(s => s.SubscriberUserId);
-        var userSubscribers = await userRepository.GetEntitiesAsync(userSubscriberIds, cancellationToken: cancellationToken);
-        var userSubscriberChatIds = userSubscribers.Select(s => s.ChatId).ToArray();
-        await botClient.SendVideoAsync(userSubscriberChatIds, media, cancellationToken);
+        await botClient.SendVideoAsync(invokerChatId, media, cancellationToken);
         return media;
     }
 }

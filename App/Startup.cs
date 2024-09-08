@@ -28,7 +28,6 @@ public class Startup(IConfiguration configuration)
         DbSettings dbSettings = ConfigureOptions<DbSettings>(services);
         services.AddScoped<CosmosClient>(_ => 
             new CosmosClient(dbSettings.AccountEndpoint, dbSettings.AccountKey));
-        services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddScoped<IPermissionManager, PermissionManager>();
@@ -41,8 +40,6 @@ public class Startup(IConfiguration configuration)
         services.AddScoped<StopCommand>();
         services.AddScoped<SetRoleCommand>();
         services.AddScoped<GetRoleCommand>();
-        services.AddScoped<SubscribeUserCommand>();
-        services.AddScoped<SubscribeChatCommand>();
         services.AddScoped<PostMediaCommand>();
 
         services.AddScoped<IDownloadMediaOperationFactory, DownloadMediaOperationFactory>();

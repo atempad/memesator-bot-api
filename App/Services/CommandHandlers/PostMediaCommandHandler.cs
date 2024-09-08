@@ -15,7 +15,7 @@ public class PostMediaCommandHandler(
     public async Task PostMediaAsync(InvokingContext invoker, string urlString, 
         CancellationToken cancellationToken = default)
     {
-        await postMediaCommand.Setup(invoker.UserId, urlString)
+        await postMediaCommand.Setup(invoker.ChatId, urlString)
             .InvokeAsync(cancellationToken);
     }
 }
