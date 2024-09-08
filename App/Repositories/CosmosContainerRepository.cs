@@ -51,16 +51,18 @@ public class CosmosContainerRepository<TEntity>(
         }
     }
 
-    public async Task<IEnumerable<TEntity>> GetAllEntitiesAsync(string? queryText = null, CancellationToken cancellationToken = default)
+    public async Task<bool> HasAnyEntityAsync(CancellationToken cancellationToken = default)
     {
-        var results = new List<TEntity>();
-        var query = container.GetItemQueryIterator<TEntity>(queryText);
-        while (query.HasMoreResults)
+        var query = container.GetItemQueryIterator<TEntity>(requestOptions: new QueryRequestOptions { MaxItemCount = 1 });
+        if (query.HasMoreResults)
         {
             var response = await query.ReadNextAsync(cancellationToken);
-            results.AddRange(response.ToList());
+            if (response.Count != 0)
+            {
+                return true;
+            }
         }
-        return results;
+        return false;
     }
 
     public async Task<IEnumerable<TEntity>> GetEntitiesAsync(IEnumerable<string> ids, CancellationToken cancellationToken = default)

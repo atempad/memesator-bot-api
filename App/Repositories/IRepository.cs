@@ -10,7 +10,7 @@ public interface IRepository<TEntity, in TId>
     Task AddEntityAsync(TEntity entity, CancellationToken cancellationToken = default);
     Task<TEntity> GetEntityAsync(TId id, CancellationToken cancellationToken = default);
     Task<TEntity?> GetEntityOrDefaultAsync(TId id, TEntity? defaultValue = null, CancellationToken cancellationToken = default);
-    Task<IEnumerable<TEntity>> GetAllEntitiesAsync(string? query = null, CancellationToken cancellationToken = default);
+    Task<bool> HasAnyEntityAsync(CancellationToken cancellationToken = default);
     Task<IEnumerable<TEntity>> GetEntitiesAsync(IEnumerable<TId> ids, CancellationToken cancellationToken = default);
     Task RemoveEntityAsync(TId id, CancellationToken cancellationToken = default);
 }

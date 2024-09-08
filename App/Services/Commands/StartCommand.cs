@@ -19,12 +19,12 @@ public class StartCommand(
     
     public async Task<bool> InvokeAsync(CancellationToken cancellationToken = default)
     {
-        var allUsers = await userRepository.GetAllEntitiesAsync(cancellationToken: cancellationToken);
+        var hasAnyEntity = await userRepository.HasAnyEntityAsync(cancellationToken: cancellationToken);
         var newUser = new ServiceUser
         {
             Id = userId,
             ChatId = userChatId,
-            Role = allUsers.Any() ? Role.User : Role.Admin
+            Role = hasAnyEntity ? Role.User : Role.Admin
         };
         await userRepository.AddEntityAsync(newUser, cancellationToken);
         return true;
