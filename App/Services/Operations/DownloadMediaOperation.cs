@@ -1,5 +1,6 @@
 using App.Models.Services;
 using PuppeteerSharp;
+using System.Runtime.InteropServices;
 
 namespace App.Services.Operations;
 
@@ -17,14 +18,15 @@ public abstract class DownloadMediaOperation : IAsyncOperation<MediaData>
     
     protected static async Task<IBrowser> GetBrowser(bool isDevelopment = false)
     {
-        if (isDevelopment)
+        bool isWindowsDevelopmentEnvironment = isDevelopment && RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        if (isWindowsDevelopmentEnvironment)
         {
             await new BrowserFetcher().DownloadAsync();
         }
         var launchOptions = new LaunchOptions
         {
-            Headless = !isDevelopment,
-            Args = isDevelopment ? [] : ["--no-sandbox"]
+            Headless = !isWindowsDevelopmentEnvironment,
+            Args = isWindowsDevelopmentEnvironment ? [] : ["--no-sandbox"]
         };
         return await Puppeteer.LaunchAsync(launchOptions);
     }
